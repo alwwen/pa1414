@@ -148,10 +148,35 @@
           </v-card>
         </v-col>
       </v-row>
+      <v-row>
+      <v-col>
+        <v-list>
+          <v-list-item v-for="(box, index) in boxes" :key="index">
+            <v-list-item-content>
+              <v-list-item-title>{{ box.text }}</v-list-item-title>
+            </v-list-item-content>
+          </v-list-item>
+        </v-list>
+      </v-col>
+    </v-row>
     </v-responsive>
   </v-container>
 </template>
 
 <script setup>
-  //
+  const boxes = ref([]);
+  async function fetchBoxes() {
+    try {
+      const response = await fetch('http://localhost:3001/api/boxes');
+      boxes.value = await response.json();
+      console.log("HEJ");
+      console.log(boxes.value);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  onMounted(async () => {
+    await fetchBoxes();
+  });
 </script>
