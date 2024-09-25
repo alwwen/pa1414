@@ -8,12 +8,37 @@
 import { createRouter, createWebHistory } from 'vue-router'
 // import { setupLayouts } from 'virtual:generated-layouts'
 // import { routes } from 'vue-router'
-import HomePage from '@/pages/index.vue'
+import IndexView from '@/pages/index.vue'
+import HomePage from '@/pages/home.vue'
+import RegisterPage from '@/pages/register.vue'
+import LoginPage from '@/pages/login.vue'
+import CreateBox from '@/components/CreateBox.vue'; // Your Create Box page
+import MyBoxes from '@/components/MyBoxes.vue';    // Your My Boxes page
 
 const routes = [
   {
     path: '/',
+    component: IndexView,
+  },
+  {
+    path: '/home',
     component: HomePage,
+  },
+  {
+    path: '/register',
+    component: RegisterPage,
+  },
+  {
+    path: '/login',
+    component: LoginPage,
+  },
+  {
+    path: '/create-box',
+    component: CreateBox,
+  },
+  {
+    path: '/my-boxes',
+    component: MyBoxes,
   }
 ]
 
@@ -21,6 +46,23 @@ const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes
 })
+
+router.beforeEach((to, from, next) => {
+  const token = localStorage.getItem('token'); // Get JWT token from localStorage
+
+  // Define public routes (those that don't require authentication)
+  const publicRoutes = ['/', '/login', '/register'];
+
+  // If the user is trying to access a protected route and is not authenticated
+  if (!token && !publicRoutes.includes(to.path)) {
+    // Redirect to the login page
+    next('/');
+  } else {
+    // Allow access to the requested route
+    next();
+  }
+});
+
 
 // Workaround for https://github.com/vitejs/vite/issues/11804
 router.onError((err, to) => {

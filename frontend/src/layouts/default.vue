@@ -5,6 +5,7 @@
     </v-main>
 
     <AppFooter />
+    <p>Default layout</p>
   </v-app>
 </template>
 
