@@ -3,12 +3,31 @@ const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const dotenv = require('dotenv');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 dotenv.config();
 const sequelize = new Sequelize ({
     dialect: 'sqlite',
     storage: './database.sqlite'
 })
 var db = {}
+
+const uploadDirectory = "/home/alexanderw/pa1414/frontend/src/form_data";
+if (!fs.existsSync(uploadDirectory)) {
+  fs.mkdirSync(uploadDirectory);
+}
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, uploadDirectory); // Directory where files will be saved
+  },
+  filename: (req, file, cb) => {
+    cb(null, req.body.filename); // Use the original name of the file
+  },
+});
+
+const upload = multer({ storage });
 
 async function setupDB() {
     try {
@@ -24,15 +43,31 @@ async function setupDB() {
             }
         });
         db.Boxes = sequelize.define('Boxes', {
-            text: {
+            title: {
                 type: DataTypes.STRING,
                 allowNull: false
             },
+            type: {
+                type: DataTypes.STRING,
+                allowNull: false
+            },
+            email: {
+                type: DataTypes.STRING,
+                allowNull: false
+            },
+            filePath: {
+                type: DataTypes.STRING,
+                allowNull: false
+            },
+            qrCode: {
+                type: DataTypes.STRING,
+                allowNull: false
+            }
         });
         await sequelize.sync({ force: true });
-        await db.Boxes.create({ text: "Box-1"});
-        await db.Boxes.create({ text: "Box-2"});
-        await db.Boxes.create({ text: "Box-3"});
+        // await db.Boxes.create({ text: "Box-1"});
+        // await db.Boxes.create({ text: "Box-2"});
+        // await db.Boxes.create({ text: "Box-3"});
         console.log("Database setup complete.");
     } catch (error) {
         console.error(error);
@@ -114,7 +149,7 @@ async function startServer() {
                     expiresIn: '1h',
                 });
 
-                res.json({ token });
+                res.json({ token: token, email: user.email });
             } catch (error) {
                 res.status(500).json({ message: 'Error logging in', error });
             }
@@ -152,6 +187,64 @@ async function startServer() {
                 console.error(error);
                 res.sendStatus(500); // Internal Server Error
             });
+        });
+
+        app.post('/api/boxes', upload.single('fileContent'), (req, res) => {
+          try {
+            const { email, title, type } = req.body;
+            console.log('Test 1:', req.file);
+            console.log('Test 2:', req.body);
+        
+            // The file should now be saved by multer in 'form_data' folder
+            if (!req.file) {
+              return res.status(400).json({ message: 'No file uploaded' });
+            }
+            
+            const filePath = req.file.filename;
+            console.log('File uploaded:', filePath);
+            db.Boxes.create({
+              email,
+              title,
+              type,
+              filePath,
+              qrCode: 'testing',
+            });
+            // Send back a success response with file path and user data
+            res.status(200).json({
+              message: 'Box created successfully',
+              email,
+              link: filePath, // File path saved on the server
+              type,
+              title,
+            });
+          } catch (error) {
+            console.error('Error uploading file:', error);
+            res.status(500).json({ message: 'Error uploading file', error });
+          }
+        });
+
+        app.get('/api/boxes/:id', async (req, res) => {
+          try {
+            const box = await db.Boxes.findByPk(req.params.id); // Fetch by primary key
+            if (box) {
+              res.json(box);
+            } else {
+              res.status(404).json({ message: 'Box not found' });
+            }
+          } catch (error) {
+            console.error('Error fetching box:', error);
+            res.status(500).json({ message: 'Error fetching box' });
+          }
+        });
+
+        app.get('/api/list', (req, res) => {
+          const filePath = req.query.path; // Get file path from query parameter
+          fs.readFile(filePath, 'utf8', (err, data) => {
+            if (err) {
+              return res.status(500).json({ error: 'Error reading file' });
+            }
+            res.send(data);
+          });
         });
 
 

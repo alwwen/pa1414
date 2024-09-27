@@ -10,6 +10,7 @@
     methods: {
       logout() {
         localStorage.removeItem('token'); // Remove the token
+        localStorage.removeItem('email'); // Remove the email
         this.$router.push('/'); // Redirect to login page (index)
       },
     },

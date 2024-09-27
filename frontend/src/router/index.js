@@ -14,6 +14,7 @@ import RegisterPage from '@/pages/register.vue'
 import LoginPage from '@/pages/login.vue'
 import CreateBox from '@/components/CreateBox.vue'; // Your Create Box page
 import MyBoxes from '@/components/MyBoxes.vue';    // Your My Boxes page
+import MyBox from '@/components/MyBox.vue';        // Your My Box page
 
 const routes = [
   {
@@ -39,6 +40,10 @@ const routes = [
   {
     path: '/my-boxes',
     component: MyBoxes,
+  },
+  {
+    path: '/my-boxes/:id', // Dynamic route for box details
+    component: MyBox,
   }
 ]
 

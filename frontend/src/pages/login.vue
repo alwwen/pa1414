@@ -46,6 +46,7 @@
           const data = await response.json();
           // Store the JWT token in localStorage
           localStorage.setItem('token', data.token);
+          localStorage.setItem('email', data.email);
   
           // Clear any error message
           this.errorMessage = '';
