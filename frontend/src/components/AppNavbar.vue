@@ -1,6 +1,6 @@
 <template>
     <header class="main-header">
-      <h1>My Application</h1>
+      <h1>MoveOut</h1>
       <button @click="logout">Logout</button>
     </header>
   </template>

@@ -6,6 +6,8 @@ const dotenv = require('dotenv');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const QRCode = require('qrcode');
+
 dotenv.config();
 const sequelize = new Sequelize ({
     dialect: 'sqlite',
@@ -16,6 +18,11 @@ var db = {}
 const uploadDirectory = "/home/alexanderw/pa1414/frontend/src/form_data";
 if (!fs.existsSync(uploadDirectory)) {
   fs.mkdirSync(uploadDirectory);
+}
+
+const qrCodeDir = "/home/alexanderw/pa1414/frontend/src/qr_codes"; // Adjust the path as necessary
+if (!fs.existsSync(qrCodeDir)){
+    fs.mkdirSync(qrCodeDir);
 }
 
 const storage = multer.diskStorage({
@@ -64,7 +71,7 @@ async function setupDB() {
                 allowNull: false
             }
         });
-        await sequelize.sync({ force: true });
+        await sequelize.sync();
         // await db.Boxes.create({ text: "Box-1"});
         // await db.Boxes.create({ text: "Box-2"});
         // await db.Boxes.create({ text: "Box-3"});
@@ -189,26 +196,40 @@ async function startServer() {
             });
         });
 
-        app.post('/api/boxes', upload.single('fileContent'), (req, res) => {
+        app.post('/api/boxes', upload.single('fileContent'), async (req, res) => {
           try {
             const { email, title, type } = req.body;
             console.log('Test 1:', req.file);
             console.log('Test 2:', req.body);
         
-            // The file should now be saved by multer in 'form_data' folder
+            // The file should now be saved by multer in the 'form_data' folder
             if (!req.file) {
               return res.status(400).json({ message: 'No file uploaded' });
             }
             
             const filePath = req.file.filename;
             console.log('File uploaded:', filePath);
-            db.Boxes.create({
+            
+            // Create the box in the database
+            const box = await db.Boxes.create({
               email,
               title,
               type,
               filePath,
-              qrCode: 'testing',
+              qrCode: '', // Initially empty, will update it later
             });
+            
+            // Generate the QR code with the link
+            const qrCodeURL = `http://localhost:3000/my-boxes/${box.id}`;
+            const qrCodePath = path.join(qrCodeDir, `${box.id}_qr.png`);
+        
+            // Generate QR code and save it
+            await QRCode.toFile(qrCodePath, qrCodeURL);
+            
+            // Update the box with the QR code path
+            box.qrCode = qrCodePath; // or you can save just the filename if you prefer
+            await box.save();
+        
             // Send back a success response with file path and user data
             res.status(200).json({
               message: 'Box created successfully',
@@ -216,6 +237,7 @@ async function startServer() {
               link: filePath, // File path saved on the server
               type,
               title,
+              qrCode: qrCodePath, // Include the QR code path in the response
             });
           } catch (error) {
             console.error('Error uploading file:', error);

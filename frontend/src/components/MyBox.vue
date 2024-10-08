@@ -4,9 +4,13 @@
     <v-card class="box-detail-card" outlined>
       <v-card-title>{{ box.title }}</v-card-title>
       <v-card-subtitle>Type: {{ box.type }}</v-card-subtitle>
+      <div v-if="box.qrCode">
+          <h3>QR Code:</h3>
+          <img :src="qrCodeLink" alt="QR Code" class="qr-code-image" />
+          <v-btn color="indigo-darken-3" @click="printQRCode">Print QR Code</v-btn>
+      </div>
       <v-card-text>
         <p>Email: {{ box.email }}</p>
-        <p>File link: <a :href="fileLink" target="_blank">{{ box.link }}</a></p>
         
         <!-- Display the content based on file type -->
         <div v-if="box.type === 'image'">
@@ -43,6 +47,7 @@ const box = ref({});
 const fileContent = ref([]); // Array to hold the file lines
 const route = useRoute();
 const fileLink = ref('');
+const qrCodeLink = ref('');
 
 // Fetch a single box based on the ID in the route
 async function fetchBox(id) {
@@ -51,6 +56,7 @@ async function fetchBox(id) {
     box.value = await response.json();
     console.log("Fetched box details:", box.value);
     fileLink.value = `/src/form_data/${box.value.filePath}`;
+    qrCodeLink.value = `/src/qr_codes/${box.value.id}_qr.png`;
     // After fetching the box, read the file content
     if (box.value.filePath) {
       await fetchFileContent(box.value.filePath);
@@ -75,6 +81,17 @@ async function fetchFileContent(filePath) {
   } catch (error) {
     console.error('Error fetching file content:', error);
   }
+}
+
+function printQRCode() {
+  const qrCodeImage = document.querySelector('.qr-code-image'); // Select the QR code image
+  const printWindow = window.open('', '', 'height=600,width=800');
+  
+  printWindow.document.write('<html><head><title>Print QR Code</title></head><body>');
+  printWindow.document.write(`<img src="${qrCodeImage.src}" style="width: 100%;"/>`); // Use the QR code image
+  printWindow.document.write('</body></html>');
+  printWindow.document.close(); // Close the document
+  printWindow.print(); // Open the print dialog
 }
 
 // Fetch box data when component mounts
