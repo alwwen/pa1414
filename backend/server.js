@@ -46,7 +46,17 @@ async function setupDB() {
             },
             password: {
                 type: DataTypes.STRING,
-                allowNull: false
+                allowNull: true
+            },
+            verified: {
+                type: DataTypes.BOOLEAN,
+                allowNull: false,
+                defaultValue: false
+            },
+            inactive: {
+                type: DataTypes.BOOLEAN,
+                allowNull: false,
+                defaultValue: false
             }
         });
         db.Boxes = sequelize.define('Boxes', {
@@ -71,7 +81,7 @@ async function setupDB() {
                 allowNull: false
             }
         });
-        await sequelize.sync();
+        await sequelize.sync({ force: true });
         // await db.Boxes.create({ text: "Box-1"});
         // await db.Boxes.create({ text: "Box-2"});
         // await db.Boxes.create({ text: "Box-3"});

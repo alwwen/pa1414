@@ -20,7 +20,9 @@
         </v-col>
       </v-row>
     </v-container>
-
+    <pre v-if="isAuthenticated">
+          <code>{{ user }}</code>
+    </pre>
     <AppFooter />
   </div>
 </template>
@@ -28,9 +30,11 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
+import { useAuth0 } from '@auth0/auth0-vue';
 
 const boxes = ref([]);
 const router = useRouter();
+const { isAuthenticated, user } = useAuth0();
 
 // Fetch boxes from the backend
 async function fetchBoxes() {
