@@ -7,6 +7,17 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const QRCode = require('qrcode');
+const nodemailer = require("nodemailer");
+
+const transporter = nodemailer.createTransport({
+    host: 'smtp.gmail.com',
+    port: 587,
+    secure: false, // use false for STARTTLS; true for SSL on port 465
+    auth: {
+      user: 'pa1414moveout@gmail.com',
+      pass: 'btbvqtqttazvlyfb',
+    }
+  });
 
 dotenv.config();
 const sequelize = new Sequelize ({
@@ -34,6 +45,36 @@ const storage = multer.diskStorage({
   },
 });
 
+async function calculateStorage(boxes) {
+    let totalSize = 0;
+
+    // Iterate over each box
+    for (const box of boxes) {
+        if (box.filePath) {
+            const filePath = "/home/alexanderw/pa1414/frontend/src/form_data/" + box.filePath; // Adjust this path as necessary
+            try {
+                // Use fs.statSync to get the file stats
+                const stats = fs.statSync(filePath);
+                totalSize += stats.size; // Add file size to total
+            } catch (error) {
+                console.error(`Could not get size for file ${filePath}:`, error);
+            }
+
+        }
+    }
+
+    return totalSize; // Return the total size in bytes
+}
+
+function formatBytes(bytes, decimals = 2) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const dm = decimals < 0 ? 0 : decimals;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+}
+
 const upload = multer({ storage });
 
 async function setupDB() {
@@ -57,6 +98,18 @@ async function setupDB() {
                 type: DataTypes.BOOLEAN,
                 allowNull: false,
                 defaultValue: false
+            },
+            lastLogin: {
+                type: DataTypes.DATE,
+                allowNull: true
+            },
+            verify_token: {
+                type: DataTypes.STRING,
+                allowNull: true
+            },
+            role: {
+                type: DataTypes.STRING,
+                allowNull: false,
             }
         });
         db.Boxes = sequelize.define('Boxes', {
@@ -79,9 +132,18 @@ async function setupDB() {
             qrCode: {
                 type: DataTypes.STRING,
                 allowNull: false
+            },
+            public: {
+                type: DataTypes.BOOLEAN,
+                allowNull: false,
+                defaultValue: false
+            },
+            access_code: {
+                type: DataTypes.STRING,
+                allowNull: true
             }
         });
-        await sequelize.sync({ force: true });
+        await sequelize.sync();
         // await db.Boxes.create({ text: "Box-1"});
         // await db.Boxes.create({ text: "Box-2"});
         // await db.Boxes.create({ text: "Box-3"});
@@ -111,6 +173,7 @@ async function startServer() {
     try {
         await setupDB()
         const port = 3001
+        console.log(process.env.GOOGLE_MAIL_APP_PASS);
         const express = require('express')
         const app = express()
         app.use(cors());
@@ -128,6 +191,11 @@ async function startServer() {
                 if (existingUser) {
                     return res.status(400).json({ message: 'User already exists' });
                 }
+                const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+                let token = '';
+                for (let i = 0; i < 6; i++) {
+                    token += chars.charAt(Math.floor(Math.random() * chars.length));
+                }
 
                 // Hash the password before saving the user
                 const hashedPassword = await bcrypt.hash(password, 10);
@@ -135,14 +203,65 @@ async function startServer() {
                 // Create and save the user
                 const user = await db.User.create({
                     email,
-                    password: hashedPassword
+                    password: hashedPassword,
+                    verify_token: token,
+                    role: 'user'
+                });
+
+                const mailOptions = {
+                    from: '"Alexander Winblad" <pa1414moveout@gmail.com>', // sender address
+                    to: email, // list of receivers
+                    subject: "Verify your email", // Subject line
+                    html: `
+                    <h1>Welcome to Our Platform!</h1>
+                    <p>Hi there,</p>
+                    <p>Thank you for registering with us! We're excited to have you on board.</p>
+                    <p>To complete your registration, please verify your email address by using the verification token sent to you.</p>
+                    <p><strong>Your Verification Token: ${token}</strong></p>
+                    <p>Simply enter the token in the verification page to activate your account and gain full access to our services.</p>
+                    <p>If you did not sign up for this account, please disregard this email.</p>
+                    <p>We're here to help if you need any assistance.</p>
+                    <p>Best regards,</p>
+                    <p>The MoveOut Team</p>
+                    `,
+                };
+                transporter.sendMail(mailOptions, function(error, info){
+                    if (error) {
+                        console.log('Error:', error);
+                    } else {
+                        console.log('Email sent: ', info.response);
+                    }
                 });
 
                 res.status(201).json({ id: user.id, email: user.email });
             } catch (error) {
+                console.log("WTF!?");
                 res.status(500).json({ message: 'Error registering user', error });
             }
         });
+
+        app.post('/verify', async (req, res) => {
+            const { email, token } = req.body;
+        
+            try {
+                // Find the user by email and verification token
+                const user = await db.User.findOne({ where: { email, verify_token: token } });
+                if (!user) {
+                    return res.status(400).json({ message: 'Invalid token or email' });
+                }
+        
+                // Mark the user as verified (remove the token and set verified flag)
+                await db.User.update(
+                    { verify_token: null, verified: true },  // Clear token and set user as verified
+                    { where: { id: user.id } }
+                );
+        
+                res.status(200).json({ message: 'Account verified successfully' });
+            } catch (error) {
+                res.status(500).json({ message: 'Error verifying account', error });
+            }
+        });
+        
 
         // User login
         app.post('/login', async (req, res) => {
@@ -161,17 +280,138 @@ async function startServer() {
                     return res.status(400).json({ message: 'Invalid username or password' });
                 }
 
+                const validated = user.verified;
+
+                if (!validated) {
+                    return res.status(400).json({ message: 'Account not verified' });
+                }
+
+                // Update the last_login_date field to the current date
+                const currentDate = new Date().toISOString(); // YYYY-MM-DD format
+
+                await db.User.update(
+                    { last_login_date: currentDate, inactive: false },
+                    { where: { id: user.id } }
+                );
+
                 // Generate JWT token
                 const token = jwt.sign({ id: user.id, username: user.email }, process.env.JWT_SECRET, {
                     expiresIn: '1h',
                 });
 
-                res.json({ token: token, email: user.email });
+                res.json({ token: token, email: user.email, role: user.role });
             } catch (error) {
                 res.status(500).json({ message: 'Error logging in', error });
             }
         });
 
+        app.get('/users', async (req, res) => {
+            try {
+                // Fetch all users
+                const users = await db.User.findAll({
+                    attributes: ['id', 'email', 'role', 'lastLogin', 'inactive'] // Select specific attributes
+                });
+        
+                // Prepare a response object
+                const userData = await Promise.all(users.map(async (user) => {
+                    // Fetch boxes for the current user based on the user's email
+                    const boxes = await db.Boxes.findAll({
+                        attributes: ['filePath'],
+                        where: { email: user.email } // Get boxes belonging to the user
+                    });
+        
+                    // Calculate total storage used for the user's boxes
+                    const storageUsed = await calculateStorage(boxes);
+        
+                    return {
+                        id: user.id,
+                        email: user.email,
+                        role: user.role,
+                        lastLogin: user.lastLogin,
+                        inactive: user.inactive,
+                        storageUsed: formatBytes(storageUsed), // Use formatted size
+                    };
+                }));
+        
+                res.json(userData);
+            } catch (error) {
+                console.error(error);
+                res.status(500).json({ message: 'Error fetching users' });
+            }
+        });
+
+        
+        app.delete('/delete-account', async (req, res) => {
+            const { email } = req.body; // Get email from the request body
+        
+            try {
+                // Check if the user exists before deleting
+                const existingUser = await db.User.findOne({ where: { email } });
+                if (!existingUser) {
+                    return res.status(404).json({ message: 'User not found' });
+                }
+        
+                // Delete the user by email
+                await db.User.destroy({
+                    where: { email },
+                });
+        
+                return res.status(204).send(); // No content
+            } catch (error) {
+                console.error(error);
+                return res.status(500).json({ message: 'Error deleting account' });
+            }
+        });
+        
+        // Set Inactive Route
+        app.patch('/set-inactive', async (req, res) => {
+            const { email } = req.body; // Get email from the request body
+        
+            try {
+                // Check if the user exists before updating
+                const existingUser = await db.User.findOne({ where: { email } });
+                if (!existingUser) {
+                    return res.status(404).json({ message: 'User not found' });
+                }
+        
+                // Set the user's status to inactive
+                await db.User.update(
+                    { active: false }, // Assuming there is an 'active' field
+                    { where: { email } }
+                );
+        
+                return res.status(200).json({ message: 'Account set to inactive' });
+            } catch (error) {
+                console.error(error);
+                return res.status(500).json({ message: 'Error setting account to inactive' });
+            }
+        });
+
+        app.post('/check-user', async (req, res) => {
+            const { email } = req.body;
+        
+            try {
+                const existingUser = await db.User.findOne({ where: { email } });
+                console.log('Existing user:', existingUser);
+                let role = existingUser?.role;
+                if (!existingUser) {
+                    console.log("HEEERE");
+                    const currentDate = new Date().toISOString();
+                    role = 'admin'
+                    const user = await db.User.create({
+                        email,
+                        password: null,
+                        verified: true,
+                        lastLogin: currentDate,
+                        role: role
+                    });
+                }
+                return res.status(200).json({ message: 'User exists', role: role, email: email });
+            } catch (error) {
+                console.error(error);
+                return res.status(500).json({ message: 'Error checking user' });
+            }
+        });
 
 
         // GET METHOD API URL | RETRIEVE ITEMS
@@ -208,13 +448,25 @@ async function startServer() {
 
         app.post('/api/boxes', upload.single('fileContent'), async (req, res) => {
           try {
-            const { email, title, type } = req.body;
+            const { email, title, type, public } = req.body;
             console.log('Test 1:', req.file);
             console.log('Test 2:', req.body);
-        
+            let access_token = '';
             // The file should now be saved by multer in the 'form_data' folder
             if (!req.file) {
               return res.status(400).json({ message: 'No file uploaded' });
+            }
+            let publiic = false;
+            if (public === 'true') {
+                publiic = true;
+            }
+            if (!publiic) {
+                const chars = '0123456789';
+                console.log("HEJ");
+                access_token = '';
+                for (let i = 0; i < 6; i++) {
+                    access_token += chars.charAt(Math.floor(Math.random() * chars.length));
+                }
             }
             
             const filePath = req.file.filename;
@@ -227,7 +479,10 @@ async function startServer() {
               type,
               filePath,
               qrCode: '', // Initially empty, will update it later
+              publiic,
+              access_code: access_token
             });
+            console.log(access_token);
             
             // Generate the QR code with the link
             const qrCodeURL = `http://localhost:3000/my-boxes/${box.id}`;
@@ -248,6 +503,7 @@ async function startServer() {
               type,
               title,
               qrCode: qrCodePath, // Include the QR code path in the response
+              public,
             });
           } catch (error) {
             console.error('Error uploading file:', error);
@@ -277,6 +533,55 @@ async function startServer() {
             }
             res.send(data);
           });
+        });
+
+        app.get('/mail/test', async (req, res) => {
+            try {
+                const mailOptions = {
+                    from: '"Alexander Winblad" <pa1414moveout@gmail.com>', // sender address
+                    to: "alwi12399@gmail.com", // list of receivers
+                    subject: "Tjena Tjena", // Subject line
+                    text: "WTF", // plain text body
+                    html: "<b>Hello world?</b>", // html body
+                };
+                transporter.sendMail(mailOptions, function(error, info){
+                    if (error) {
+                      console.log('Error:', error);
+                    } else {
+                      console.log('Email sent: ', info.response);
+                    }
+                  });
+                res.send('Mail sent');
+            } catch (error) {
+                console.error(error);
+                res.send('Error sending mail');
+            }
+            
+        });
+
+        app.post('/share', async (req, res) => {
+            const { email, url, access_code } = req.body;
+            const mailOptions = {
+                from: '"Alexander Winblad" <pa1414moveout@gmail.com>', // sender address
+                to: email, // list of receivers
+                subject: "Box sharing", // Subject line
+                html: `
+                <h1>Someone wants to share their box with you!</h1>
+                <p>Hi there,</p>
+                <p>You have been invited to access a box on MoveOut. Click the link below to access the box with the code.</p>
+                <p><a href="${url}">Access Box</a></p>
+                <p>Access Code: ${access_code}</p>
+                <p>Best regards,</p>
+                <p>The MoveOut Team</p>
+                `,
+            };
+            transporter.sendMail(mailOptions, function(error, info){
+                if (error) {
+                    console.log('Error:', error);
+                } else {
+                    console.log('Email sent: ', info.response);
+                }
+            });
         });
 
 

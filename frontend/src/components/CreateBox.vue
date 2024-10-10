@@ -15,6 +15,15 @@
           ></v-text-field>
         </v-card-text>
 
+        <v-card-text>
+          <v-switch
+            v-model="isPublic"
+            color="primary"
+            label="Make Box Public?"
+            inset
+          ></v-switch>
+        </v-card-text>
+
         <!-- Selection for Input Type -->
         <v-card-text>
           <v-select
@@ -94,6 +103,7 @@ export default {
       listItems: [], // For list input
       audioFile: null, // For audio file upload
       imageFile: null, // For image file upload
+      isPublic: false, // To track whether the box is public or not
       email: localStorage.getItem('email') || '', // Email of logged in user
     };
   },
@@ -113,6 +123,7 @@ export default {
         formData.append('type', this.selectedOption);
         formData.append('filename', generateRandomString(20) + '.txt');
         formData.append('fileContent', new Blob([fileContent], { type: 'text/plain' }));
+        formData.append('public', this.isPublic);
 
       } else if (this.selectedOption === 'image') {
         console.log("YES 1");
@@ -123,6 +134,7 @@ export default {
           formData.append('type', this.selectedOption);
           formData.append('filename', generateRandomString(20) + '.png'); // Random filename for the image
           formData.append('fileContent', this.imageFile); // Append the image file to the form data
+          formData.append('public', this.isPublic);
         } else {
           console.error('No image file selected');
           return; // Exit if no image is selected
@@ -134,6 +146,7 @@ export default {
           formData.append('type', this.selectedOption);
           formData.append('filename', generateRandomString(20) + '.mp3'); // Random filename for audio
           formData.append('fileContent', this.audioFile); // Append the audio file to the form data
+          formData.append('public', this.isPublic);
         } else {
           console.error('No audio file selected');
           return; // Exit if no audio is selected

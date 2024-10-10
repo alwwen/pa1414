@@ -17,6 +17,9 @@ import CreateBox from '@/components/CreateBox.vue'; // Your Create Box page
 import MyBoxes from '@/components/MyBoxes.vue';    // Your My Boxes page
 import MyBox from '@/components/MyBox.vue';        // Your My Box page
 import User from '@/pages/user.vue';          // Your User page
+import VerifyAccount from '@/components/Verification.vue';
+import Userprofile from '@/components/userprofile.vue';
+import UserList from '@/components/UserList.vue';
 
 const routes = [
   {
@@ -44,13 +47,25 @@ const routes = [
     component: MyBoxes,
   },
   {
-    path: '/my-boxes/:id', // Dynamic route for box details
+    path: '/my-boxes/:id', 
     component: MyBox,
   },
   {
     path: '/user',
     component: User,
-  }
+  },
+  {
+    path: '/verify',
+    component: VerifyAccount,
+  },
+  {
+    path: '/user-account',
+    component: Userprofile,
+  },
+  {
+    path: '/user-list',
+    component: UserList,
+  },
 ]
 
 const router = createRouter({
@@ -63,17 +78,23 @@ router.beforeEach((to, from, next) => {
   const { isAuthenticated, isLoading } = useAuth0(); // Get Auth0 authentication status
   console.log('isAuthenticated', !isAuthenticated.value)
   console.log('token', !token)
+
   // Define public routes (those that don't require authentication)
-  const publicRoutes = ['/', '/user/login', '/user/register'];
-  console.log('publicroutes', publicRoutes.includes(to.path))
+  const publicRoutes = ['/', '/user/login', '/user/register', '/verify'];
+
+  // Check if the current route is a public route or matches the "/my-boxes/:id" pattern
+  const isPublicRoute = publicRoutes.includes(to.path) || /^\/my-boxes\/\d+$/.test(to.path);
+
+  console.log('isPublicRoute', isPublicRoute);
+  
   // If the user is trying to access a protected route and is not authenticated
-  if ((!token && !isAuthenticated.value) && !publicRoutes.includes(to.path)) {
+  if ((!token && !isAuthenticated.value) && !isPublicRoute) {
     // Redirect to the login page
-    console.log("HEjsan");
+    console.log("Redirecting to login");
     next('/');
   } else {
     // Allow access to the requested route
-    console.log("Ja?");
+    console.log("Access granted to route");
     next();
   }
 });

@@ -26,6 +26,9 @@ importers:
       multer:
         specifier: 1.4.5-lts.1
         version: 1.4.5-lts.1
+      nodemailer:
+        specifier: ^6.9.15
+        version: 6.9.15
       qrcode:
         specifier: ^1.5.4
         version: 1.5.4
@@ -637,6 +640,10 @@ packages:
     resolution: {integrity: sha512-olTJRgUtAb/hOXG0E93wZDs5YiJlgbXxTwQAFHyNlRsXQnYzUaF2aGgujZbw+hR8aF4ZG/rST57bWMWD16jr9w==}
     engines: {node: '>= 10.12.0'}
     hasBin: true
+
+  nodemailer@6.9.15:
+    resolution: {integrity: sha512-AHf04ySLC6CIfuRtRiEYtGEXgRfa6INgWGluDhnxTZhHSKvrBu7lc1VVchQ0d8nPc4cFaZoPq8vkyNoZr0TpGQ==}
+    engines: {node: '>=6.0.0'}
 
   nopt@5.0.0:
     resolution: {integrity: sha512-Tbj67rffqceeLpcRXrT7vKAN8CwfPeIBgM7E6iBkmKLV7bEMwpGgYLGv0jACUsECaa/vuxP0IjEont6umdMgtQ==}
@@ -1699,6 +1706,8 @@ snapshots:
       - bluebird
       - supports-color
     optional: true
+
+  nodemailer@6.9.15: {}
 
   nopt@5.0.0:
     dependencies:
