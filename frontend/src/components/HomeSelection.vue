@@ -11,8 +11,7 @@
       <v-card-title>View My Boxes</v-card-title>
       <v-card-text>View and manage all your existing boxes.</v-card-text>
     </v-card>
-    
-    <button @click="mail">MAAAAAIIILLLL</button>
+
   </div>
 </template>
 

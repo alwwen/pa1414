@@ -20,9 +20,6 @@
         </v-col>
       </v-row>
     </v-container>
-    <pre v-if="isAuthenticated">
-          <code>{{ user }}</code>
-    </pre>
     <AppFooter />
   </div>
 </template>
@@ -38,8 +35,18 @@ const { isAuthenticated, user } = useAuth0();
 
 // Fetch boxes from the backend
 async function fetchBoxes() {
+  const email = localStorage.getItem('email');  // Get user email
+  const role = localStorage.getItem('role');    // Get user role
+
   try {
-    const response = await fetch('http://localhost:3001/api/boxes');
+    const response = await fetch('http://localhost:3001/api/boxes', {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'User-Email': email,
+        'User-Role': role,
+      },
+    });
     boxes.value = await response.json();
     console.log("Fetched boxes:", boxes.value);
   } catch (error) {

@@ -15,9 +15,11 @@ const transporter = nodemailer.createTransport({
     secure: false, // use false for STARTTLS; true for SSL on port 465
     auth: {
       user: 'pa1414moveout@gmail.com',
-      pass: 'btbvqtqttazvlyfb',
+      pass: '',
     }
   });
+
+//   #btbvqtqttazvlyfb
 
 dotenv.config();
 const sequelize = new Sequelize ({
@@ -397,7 +399,7 @@ async function startServer() {
                 if (!existingUser) {
                     console.log("HEEERE");
                     const currentDate = new Date().toISOString();
-                    role = 'admin'
+                    role = 'user';
                     const user = await db.User.create({
                         email,
                         password: null,
@@ -416,11 +418,27 @@ async function startServer() {
 
         // GET METHOD API URL | RETRIEVE ITEMS
         app.get('/api/boxes', (req, res) => {
-            // return all taskls
-            db.Boxes.findAll().then(boxes => {
-                res.json(boxes)
-            })
-        })
+            const userEmail = req.headers['user-email']; // Email from headers
+            const userRole = req.headers['user-role'];   // Role from headers
+        
+            if (!userEmail || !userRole) {
+                return res.status(400).json({ error: 'Missing email or role in headers' });
+            }
+        
+            // If the user is admin, return all boxes
+            if (userRole === 'admin') {
+                db.Boxes.findAll()
+                    .then(boxes => res.json(boxes))
+                    .catch(err => res.status(500).json({ error: 'Error fetching boxes' }));
+            } else {
+                // If the user is not admin, return boxes that belong to the user
+                db.Boxes.findAll({
+                    where: { email: userEmail }  // Assuming `userEmail` is the field in your database that links boxes to users
+                })
+                .then(boxes => res.json(boxes))
+                .catch(err => res.status(500).json({ error: 'Error fetching boxes' }));
+            }
+        });
         // POST METHOD API URL | CREATE ITEM
         // app.post('/api/boxes', (req, res) => {
         //     // create a task

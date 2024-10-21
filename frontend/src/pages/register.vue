@@ -9,8 +9,9 @@
       <div>
         <label for="password">Password:</label>
         <input type="password" v-model="password" required />
+        <p v-if="!isPasswordValid" class="error">Password must be at least 6 characters long and contain at least one number.</p>
       </div>
-      <button type="submit">Register</button>
+      <button type="submit" :disabled="!isPasswordValid">Register</button>
     </form>
     <p v-if="errorMessage" class="error">{{ errorMessage }}</p>
     <p v-if="successMessage" class="success">{{ successMessage }}</p>
@@ -27,8 +28,22 @@ export default {
       successMessage: '',
     };
   },
+  computed: {
+    isPasswordValid() {
+      // Check if the password is at least 6 characters long and contains at least one number
+      const passwordRegex = /^(?=.*[0-9]).{6,}$/;
+      return passwordRegex.test(this.password);
+    },
+  },
   methods: {
     async registerUser() {
+      // Check if the password is valid before proceeding
+      if (!this.isPasswordValid) {
+        this.errorMessage = 'Please fix the errors above.';
+        this.successMessage = '';
+        return;
+      }
+
       try {
         const response = await fetch('http://localhost:3001/register', {
           method: 'POST',
