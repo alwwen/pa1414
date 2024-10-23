@@ -1,4 +1,4 @@
-const { Sequelize, DataTypes } = require('sequelize');
+const { Sequelize, DataTypes, Op } = require('sequelize');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
@@ -8,6 +8,8 @@ const path = require('path');
 const fs = require('fs');
 const QRCode = require('qrcode');
 const nodemailer = require("nodemailer");
+const { createCanvas, loadImage } = require('canvas');
+
 
 const transporter = nodemailer.createTransport({
     host: 'smtp.gmail.com',
@@ -15,7 +17,7 @@ const transporter = nodemailer.createTransport({
     secure: false, // use false for STARTTLS; true for SSL on port 465
     auth: {
       user: 'pa1414moveout@gmail.com',
-      pass: '',
+      pass: 'anfdhibaozqhieot',
     }
   });
 
@@ -43,7 +45,12 @@ const storage = multer.diskStorage({
     cb(null, uploadDirectory); // Directory where files will be saved
   },
   filename: (req, file, cb) => {
-    cb(null, req.body.filename); // Use the original name of the file
+    const originalFilename = file.originalname;
+    const customFilename = req.body.filename || originalFilename; // Use the filename from the body or fallback to the original
+    console.log('Custom filename:', customFilename);
+    console.log('Original filename:', originalFilename);
+    console.log('Req filename:', req.body.filename);
+    cb(null, customFilename); // Use the original name of the file
   },
 });
 
@@ -180,6 +187,7 @@ async function startServer() {
         const app = express()
         app.use(cors());
         app.use(express.json())
+        app.use(express.urlencoded({ extended: true }));
         app.get('/', (req, res) => {
             res.send('hello world')
         });
@@ -247,6 +255,8 @@ async function startServer() {
         
             try {
                 // Find the user by email and verification token
+                const test_user = await db.User.findOne({ where: { email } });
+                console.log("User:", test_user);
                 const user = await db.User.findOne({ where: { email, verify_token: token } });
                 if (!user) {
                     return res.status(400).json({ message: 'Invalid token or email' });
@@ -271,43 +281,44 @@ async function startServer() {
 
             try {
                 // Find the user by username
+                console.log("HEJ1");
                 const user = await db.User.findOne({ where: { email } });
                 if (!user) {
                     return res.status(400).json({ message: 'Invalid username or password' });
                 }
-
+                console.log("HEJ2");
                 // Compare passwords
                 const validPassword = await bcrypt.compare(password, user.password);
                 if (!validPassword) {
                     return res.status(400).json({ message: 'Invalid username or password' });
                 }
-
+                console.log("HEJ3");
                 const validated = user.verified;
 
                 if (!validated) {
                     return res.status(400).json({ message: 'Account not verified' });
                 }
-
+                console.log("HEJ4");
                 // Update the last_login_date field to the current date
                 const currentDate = new Date().toISOString(); // YYYY-MM-DD format
 
                 await db.User.update(
-                    { last_login_date: currentDate, inactive: false },
+                    { lastLogin: currentDate, inactive: false },
                     { where: { id: user.id } }
                 );
-
+                console.log("HEJ5");
                 // Generate JWT token
                 const token = jwt.sign({ id: user.id, username: user.email }, process.env.JWT_SECRET, {
                     expiresIn: '1h',
                 });
-
+                console.log("HEJ6");
                 res.json({ token: token, email: user.email, role: user.role });
             } catch (error) {
                 res.status(500).json({ message: 'Error logging in', error });
             }
         });
 
-        app.get('/users', async (req, res) => {
+        app.get('/users', auth, async (req, res) => {
             try {
                 // Fetch all users
                 const users = await db.User.findAll({
@@ -396,9 +407,10 @@ async function startServer() {
                 const existingUser = await db.User.findOne({ where: { email } });
                 console.log('Existing user:', existingUser);
                 let role = existingUser?.role;
+                let token = "";
+                const currentDate = new Date().toISOString();
                 if (!existingUser) {
                     console.log("HEEERE");
-                    const currentDate = new Date().toISOString();
                     role = 'user';
                     const user = await db.User.create({
                         email,
@@ -407,8 +419,21 @@ async function startServer() {
                         lastLogin: currentDate,
                         role: role
                     });
+                    token = jwt.sign({ id: user.id, username: user.email }, process.env.JWT_SECRET, {
+                        expiresIn: '1h',
+                    });
+                } else {
+                    await db.User.update(
+                        { lastLogin: currentDate, inactive: false },
+                        { where: { id: existingUser.id } }
+                    );
+                    token = jwt.sign({ id: existingUser.id, username: existingUser.email }, process.env.JWT_SECRET, {
+                        expiresIn: '1h',
+                    });
                 }
-                return res.status(200).json({ message: 'User exists', role: role, email: email });
+
+                console.log("Sista steget");
+                return res.status(200).json({ message: 'User exists', role: role, email: email, token: token });
             } catch (error) {
                 console.error(error);
                 return res.status(500).json({ message: 'Error checking user' });
@@ -417,7 +442,7 @@ async function startServer() {
 
 
         // GET METHOD API URL | RETRIEVE ITEMS
-        app.get('/api/boxes', (req, res) => {
+        app.get('/api/boxes', auth, (req, res) => {
             const userEmail = req.headers['user-email']; // Email from headers
             const userRole = req.headers['user-role'];   // Role from headers
         
@@ -427,7 +452,14 @@ async function startServer() {
         
             // If the user is admin, return all boxes
             if (userRole === 'admin') {
-                db.Boxes.findAll()
+                db.Boxes.findAll({
+                    where: {
+                        [Op.or]: [
+                            { public: true },
+                            { email: userEmail }
+                        ]
+                    }
+                })
                     .then(boxes => res.json(boxes))
                     .catch(err => res.status(500).json({ error: 'Error fetching boxes' }));
             } else {
@@ -447,10 +479,42 @@ async function startServer() {
         //     }) 
         // })
 
+        app.post('/api/boxes-update/:id', upload.single('fileContent'), async (req, res) => {
+            try {
+              const { title, type, filename } = req.body;
+              if (!req.file) {
+                return res.status(400).json({ message: 'No file uploaded' });
+              }
+              console.log(req.body);
+              console.log('title:', title);
+                console.log('type:', type);
+                console.log('filename:', req.body.filename);
+                console.log('file:', filename);
+              // Find the box by ID
+              const box = await db.Boxes.findByPk(req.params.id);
+              
+              if (!box) {
+                return res.status(404).json({ message: 'Box not found' });
+              }
+          
+              // Update the box title
+              box.title = title;
+              box.type = type;
+                box.filePath = filename;
+          
+              await box.save(); // Save changes
+              res.status(200).json(box); // Send back the updated box
+            } catch (error) {
+              console.error('Error updating box:', error);
+              res.status(500).json({ message: 'Error updating box' });
+            }
+          });
+          
+
 
 
         // DELETE METHOD API URL | DELETE ITEM
-        app.delete('/api/boxes/:id', (req, res) => {
+        app.delete('/api/boxes/:id', auth, (req, res) => {
             // delete a task
             db.Boxes.destroy({
                 where: {
@@ -464,9 +528,9 @@ async function startServer() {
             });
         });
 
-        app.post('/api/boxes', upload.single('fileContent'), async (req, res) => {
+        app.post('/api/boxes', auth, upload.single('fileContent'), async (req, res) => {
           try {
-            const { email, title, type, public } = req.body;
+            const { email, title, type, public, label, content } = req.body;
             console.log('Test 1:', req.file);
             console.log('Test 2:', req.body);
             let access_token = '';
@@ -505,6 +569,47 @@ async function startServer() {
             // Generate the QR code with the link
             const qrCodeURL = `http://localhost:3000/my-boxes/${box.id}`;
             const qrCodePath = path.join(qrCodeDir, `${box.id}_qr.png`);
+
+            const backgroundImage = await loadImage(`./../frontend/src/assets/${label}`);
+
+            // Create a canvas with the same size as the background image
+            const canvas = createCanvas(1301, 574);
+            const ctx = canvas.getContext('2d');
+
+            // Draw the background image onto the canvas
+            ctx.drawImage(backgroundImage, 0, 0, canvas.width, canvas.height);
+
+            // Add the title text (centered)
+            ctx.font = '48px Arial';
+            ctx.fillStyle = '#000000';
+            ctx.textAlign = 'center';
+            ctx.fillText(box.title, canvas.width / 2, 50); // Adjust the y-position if needed
+
+            // Generate the QR code image data URL
+            const qrCodeDataUrl = await QRCode.toDataURL(qrCodeURL, {
+                width: 150,
+                margin: 1,
+            });
+
+            // Load the QR code image from the data URL
+            const qrCodeImage = await loadImage(qrCodeDataUrl);
+
+            // Draw the QR code image onto the canvas (centered horizontally, placed below the text)
+            const qrCodeSize = 300; // Size of the QR code
+            ctx.drawImage(qrCodeImage, (canvas.width - qrCodeSize) / 2, 250, qrCodeSize, qrCodeSize); // Adjust y-position
+            console.log("CONTENT:", content);
+            const warningSize = 90;
+            const warningImage = await loadImage(`./../frontend/src/assets/${content}`);
+            ctx.drawImage(warningImage, 30, 400, warningSize, warningSize);
+            // Save the final image as `${box.id}_label.png` in the qrCodeDir
+            const finalImagePath = path.join(qrCodeDir, `${box.id}_label.png`);
+            const out = fs.createWriteStream(finalImagePath);
+            const stream = canvas.createPNGStream();
+            stream.pipe(out);
+
+            out.on('finish', () => {
+                console.log(`Label image saved at ${finalImagePath}`);
+            });
         
             // Generate QR code and save it
             await QRCode.toFile(qrCodePath, qrCodeURL);
@@ -600,6 +705,27 @@ async function startServer() {
                     console.log('Email sent: ', info.response);
                 }
             });
+        });
+
+        // Route to send email to all users except the logged-in user
+        app.post('/mail/all', auth, async (req, res) => {
+            const { emailContent, emails } = req.body;         // Email content from the request body
+            try {
+                // Send an email to each user
+                for (const email of emails) {
+                    await transporter.sendMail({
+                        from: '"Alexander Winblad" <pa1414moveout@gmail.com>',
+                        to: email,
+                        subject: 'Message from Admin',
+                        text: emailContent,  // Email content from request body
+                    });
+                }
+
+                res.status(200).json({ message: 'Emails sent successfully.' });
+            } catch (error) {
+                console.error('Error sending emails:', error);
+                res.status(500).json({ error: 'Failed to send emails.' });
+            }
         });
 
 

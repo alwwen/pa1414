@@ -70,6 +70,34 @@
           ></v-file-input>
         </v-card-text>
 
+        <v-card-text>
+          <h3>Select Label Style</h3>
+          <v-row>
+            <v-col cols="4" v-for="label in labelOptions" :key="label.value">
+              <div
+                :class="{'selected-label': selectedLabel === label.value}"
+                class="label-image-container"
+                @click="selectLabel(label.value)"
+              >
+                <img :src="getLabelImagePath(label.value)" alt="Label Image" class="label-image">
+              </div>
+            </v-col>
+          </v-row>
+        </v-card-text>
+        <v-card-text>
+          <h3>Select Content type:</h3>
+          <v-row>
+            <v-col cols="4" v-for="content in contentOptions" :key="content.value">
+              <div
+                :class="{'selected-content': selectedContent === content.value}"
+                class="content-image-container"
+                @click="selectContent(content.value)"
+              >
+                <img :src="getContentImagePath(content.value)" alt="Content Image" class="content-image">
+              </div>
+            </v-col>
+          </v-row>
+        </v-card-text>
         <!-- Submit Button -->
         <v-card-actions>
           <v-btn type="submit" color="success">Submit</v-btn>
@@ -100,16 +128,40 @@ export default {
         { title: 'Audio File', value: 'audio' },
         { title: 'Image File', value: 'image' },
       ],
+      selectedLabel: '',
+      selectedContent: '',
       listItems: [], // For list input
       audioFile: null, // For audio file upload
       imageFile: null, // For image file upload
       isPublic: false, // To track whether the box is public or not
       email: localStorage.getItem('email') || '', // Email of logged in user
+      labelOptions: [
+        { text: 'Label 1', value: 'label1.png' },
+        { text: 'Label 2', value: 'label2.png' },
+        { text: 'Label 3', value: 'label3.png' },
+      ],
+      contentOptions: [
+        { text: 'Flameable', value: 'flameable.png' },
+        { text: 'Fragile', value: 'fragile.png' },
+        { text: 'Radioactive', value: 'radioactive.png' },
+      ],
     };
   },
   methods: {
     addNewItem() {
       this.listItems.push(''); // Add a new blank input field for the list
+    },
+    getLabelImagePath(label) {
+      return `/src/assets/${label}`; // Path to your label images folder
+    },
+    selectLabel(label) {
+      this.selectedLabel = label; // Set the clicked label as the selected one
+    },
+    getContentImagePath(content) {
+      return `/src/assets/${content}`; // Path to your label images folder
+    },
+    selectContent(content) {
+      this.selectedContent = content; // Set the clicked label as the selected one
     },
     async handleSubmit() {
       const formData = new FormData();
@@ -152,11 +204,16 @@ export default {
           return; // Exit if no audio is selected
         }
       }
+      formData.append('label', this.selectedLabel);
+      formData.append('content', this.selectedContent);
       console.log("FILE DATA:", formData.get('filename'));
       try {
         const response = await fetch('http://localhost:3001/api/boxes', {
           method: 'POST',
           body: formData,
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          }
         });
 
         if (response.ok) {
@@ -174,5 +231,38 @@ export default {
 </script>
 
 <style scoped>
-/* Add any necessary styling here */
+  .label-image {
+  max-width: 300px;
+  cursor: pointer;
+}
+
+.label-image-container {
+  text-align: center;
+}
+
+.selected-label {
+  border: 4px solid green;
+  border-radius: 8px;
+  padding: 10px;
+}
+
+.content-image {
+  max-width: 300px;
+  cursor: pointer;
+}
+
+.content-image-container {
+  text-align: center;
+}
+
+.selected-content {
+  border: 4px solid green;
+  border-radius: 8px;
+  padding: 10px;
+}
+
+.v-row {
+  margin: 0;
+  justify-content: center;
+}
 </style>

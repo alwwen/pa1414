@@ -20,6 +20,7 @@ import User from '@/pages/user.vue';          // Your User page
 import VerifyAccount from '@/components/Verification.vue';
 import Userprofile from '@/components/userprofile.vue';
 import UserList from '@/components/UserList.vue';
+import EditBox from '@/components/EditBox.vue';
 
 const routes = [
   {
@@ -66,6 +67,10 @@ const routes = [
     path: '/user-list',
     component: UserList,
   },
+  {
+    path: '/edit-box/:id',
+    component: EditBox,
+  }
 ]
 
 const router = createRouter({

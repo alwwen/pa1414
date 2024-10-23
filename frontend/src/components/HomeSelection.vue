@@ -38,6 +38,7 @@ export default {
           // Store the JWT token in localStorage
       localStorage.setItem('email', data.email);
       localStorage.setItem('role', data.role);
+      localStorage.setItem('token', data.token);
     };
 
     // onMounted lifecycle hook to check if user is authenticated

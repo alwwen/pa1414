@@ -37,12 +37,13 @@ const { isAuthenticated, user } = useAuth0();
 async function fetchBoxes() {
   const email = localStorage.getItem('email');  // Get user email
   const role = localStorage.getItem('role');    // Get user role
-
+  const token = localStorage.getItem('token');
   try {
     const response = await fetch('http://localhost:3001/api/boxes', {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
         'User-Email': email,
         'User-Role': role,
       },

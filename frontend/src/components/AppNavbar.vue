@@ -21,8 +21,9 @@ export default {
     };
   },
   mounted() {
-    this.checkAdminRole(); // Check role on mount
     this.checkIfLoggedIn();
+    this.checkAdminRole(); // Check role on mount
+    
     // Optionally, set up an interval to recheck the role periodically.
     this.intervalId = setInterval(() => {
       this.checkAdminRole();
@@ -35,6 +36,7 @@ export default {
   methods: {
     checkAdminRole() {
       const role = localStorage.getItem('role'); // Check role from localStorage
+      console.log(role);
       this.isAdmin = role === 'admin'; // Update isAdmin if the role is 'admin'
     },
     checkIfLoggedIn() {

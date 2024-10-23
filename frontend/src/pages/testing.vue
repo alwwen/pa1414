@@ -38,6 +38,7 @@
         };
 
         const goToLogin = () => {
+          console.log("Hello");
           router.push('/user/login');
         };
 

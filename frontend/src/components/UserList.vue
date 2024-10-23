@@ -23,6 +23,16 @@
             <span>{{ item.storageUsed }}</span>
         </template>
     </v-data-table>
+    <h2>Send an email to all users!</h2>
+    <div class="send-email-section">
+      <v-textarea
+        v-model="emailContent"
+        label="Email Content"
+        rows="5"
+        placeholder="Enter the content of the email you want to send to all users"
+      ></v-textarea>
+      <v-btn color="primary" @click="sendEmails">Send Email to All Users</v-btn>
+    </div>
     <v-dialog v-model="dialog" max-width="500">
       <v-card>
         <v-card-title>Account Details</v-card-title>
@@ -50,6 +60,7 @@ export default {
   data() {
     return {
       users: [],
+      emailContent: '',
       headers: [
         { text: 'Email', value: 'email' },
         { text: 'Last Login', value: 'last_login' },
@@ -63,8 +74,15 @@ export default {
   },
   methods: {
     async fetchUsers() {
+      const token = localStorage.getItem('token');
       try {
-        const response = await fetch('http://localhost:3001/users');
+        const response = await fetch('http://localhost:3001/users', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+        });
         const data = await response.json();
         this.users = data;
       } catch (error) {
@@ -105,6 +123,35 @@ export default {
         } catch (error) {
           console.error('Error deactivating account:', error);
         }
+      }
+    },
+    async sendEmails() {
+      const token = localStorage.getItem('token');
+      const emails = this.users.map(user => user.email);
+      const currentUserEmail = localStorage.getItem('email');
+      const filteredEmails = emails.filter(email => email !== currentUserEmail);
+      console.log(emails);
+      try {
+        const response = await fetch('http://localhost:3001/mail/all', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            emailContent: this.emailContent,
+            emails: filteredEmails,
+          }),
+        });
+
+        if (response.ok) {
+          alert('Emails sent successfully!');
+        } else {
+          const error = await response.json();
+          alert(`Error: ${error.message}`);
+        }
+      } catch (error) {
+        console.error('Error sending emails:', error);
       }
     },
   },

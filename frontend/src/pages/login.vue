@@ -38,10 +38,10 @@
               password: this.password,
             }),
           });
-
+          console.log(response.status);
           // Check if the response has a 400 status code
           if (response.status === 400) {
-            const errorData = await response.json();
+            const errorData = response;
             
             // Check if it's a specific error related to verification
             if (errorData.message === 'Account not verified') {
@@ -60,6 +60,7 @@
           // Store the JWT token in localStorage
           localStorage.setItem('token', data.token);
           localStorage.setItem('email', data.email);
+          localStorage.setItem('role', data.role);
 
           // Clear any error message
           this.errorMessage = '';

@@ -7,7 +7,7 @@
       
       <!-- Display QR code if available -->
       <div v-if="box.qrCode && hasAccess">
-        <h3>QR Code:</h3>
+        <h3>Printable label:</h3>
         <img :src="qrCodeLink" alt="QR Code" class="qr-code-image" />
         <v-btn color="indigo-darken-3" @click="printQRCode">Print QR Code</v-btn>
         
@@ -61,6 +61,9 @@
               <li v-for="(line, index) in fileContent" :key="index">{{ line }}</li>
             </ul>
           </div>
+          <div v-if="isOwner">
+            <v-btn color="primary" @click="goToEditView">Edit Box</v-btn>
+          </div>
         </div>
       </v-card-text>
     </v-card>
@@ -70,11 +73,12 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 
 const box = ref({});
 const fileContent = ref([]); // Array to hold the file lines
 const route = useRoute();
+const router = useRouter();
 const fileLink = ref('');
 const qrCodeLink = ref('');
 const hasAccess = ref(false); // Tracks if the user has access to the box
@@ -82,6 +86,7 @@ const inputAccessCode = ref(''); // Input value for the access code
 const accessError = ref(false); // Tracks if the access code is incorrect
 const isOwner = ref(false); // Tracks if the logged-in user is the owner
 const shareEmail = ref(''); // Input value for the email to share
+const id = route.params.id;
 
 // Fetch a single box based on the ID in the route
 async function fetchBox(id) {
@@ -101,7 +106,7 @@ async function fetchBox(id) {
 
     // Set file and QR code links
     fileLink.value = `/src/form_data/${box.value.filePath}`;
-    qrCodeLink.value = `/src/qr_codes/${box.value.id}_qr.png`;
+    qrCodeLink.value = `/src/qr_codes/${box.value.id}_label.png`;
 
     // Fetch the file content if the box is a list and access is granted
     if (hasAccess.value && box.value.filePath && box.value.type === 'list') {
@@ -110,6 +115,10 @@ async function fetchBox(id) {
   } catch (error) {
     console.error('Error fetching box:', error);
   }
+}
+
+function goToEditView() {
+  router.push(`/edit-box/${box.value.id}`);
 }
 
 // Function to fetch the file content
@@ -139,19 +148,17 @@ function checkAccessCode() {
   }
 }
 
-// Function to share the box
 async function shareBox() {
   try {
-    // Validate email input
     if (!shareEmail.value) {
       alert('Please enter an email address to share the box.');
       return;
     }
     console.log("BOX VALUE:", box.value);
     const shareData = {
-      access_code: box.value.access_code, // Send access code in the request
-      email: shareEmail.value, // Send email in the request
-      url: window.location.href // Current page URL
+      access_code: box.value.access_code,
+      email: shareEmail.value,
+      url: window.location.href 
     };
 
     const response = await fetch('http://localhost:3001/share', {
@@ -164,7 +171,7 @@ async function shareBox() {
 
     if (response.ok) {
       alert('Box shared successfully!');
-      shareEmail.value = ''; // Clear email input after successful share
+      shareEmail.value = '';
     } else {
       console.error('Failed to share box');
     }
@@ -174,20 +181,17 @@ async function shareBox() {
 }
 
 function printQRCode() {
-  const qrCodeImage = document.querySelector('.qr-code-image'); // Select the QR code image
+  const qrCodeImage = document.querySelector('.qr-code-image');
   const printWindow = window.open('', '', 'height=600,width=800');
   
   printWindow.document.write('<html><head><title>Print QR Code</title></head><body>');
-  printWindow.document.write(`<img src="${qrCodeImage.src}" style="width: 100%;"/>`); // Use the QR code image
+  printWindow.document.write(`<img src="${qrCodeImage.src}" style="width: 100%;"/>`);
   printWindow.document.write('</body></html>');
-  printWindow.document.close(); // Close the document
-  printWindow.print(); // Open the print dialog
+  printWindow.document.close();
+  printWindow.print();
 }
 
-// Fetch box data when component mounts
 onMounted(() => {
-  const id = route.params.id;
-  console.log("Box ID:", id);
   fetchBox(id);
 });
 </script>
@@ -196,5 +200,10 @@ onMounted(() => {
 .box-detail-card {
   max-width: 600px;
   margin: auto;
+}
+
+.qr-code-image {
+  width: 500px;
+  margin: 10px 0;
 }
 </style>
