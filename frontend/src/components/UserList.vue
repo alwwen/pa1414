@@ -16,13 +16,14 @@
       <template v-slot:item.role="{ item }">
         <span>{{ item.role }}</span>
       </template>
-        <template v-slot:item.inactive="{ item }">
-            <span>{{ formateAccountStatus(item.inactive) }}</span>
-        </template>
-        <template v-slot:item.storageUsed="{ item }">
-            <span>{{ item.storageUsed }}</span>
-        </template>
+      <template v-slot:item.inactive="{ item }">
+        <span>{{ formateAccountStatus(item.inactive) }}</span>
+      </template>
+      <template v-slot:item.storageUsed="{ item }">
+        <span>{{ item.storageUsed }}</span>
+      </template>
     </v-data-table>
+
     <h2>Send an email to all users!</h2>
     <div class="send-email-section">
       <v-textarea
@@ -33,6 +34,7 @@
       ></v-textarea>
       <v-btn color="primary" @click="sendEmails">Send Email to All Users</v-btn>
     </div>
+
     <v-dialog v-model="dialog" max-width="500">
       <v-card>
         <v-card-title>Account Details</v-card-title>
@@ -44,7 +46,6 @@
           <p>Size: {{ selectedUser?.storageUsed }}</p>
         </v-card-text>
         <v-card-actions>
-          <!-- Deactivate Account Button -->
           <v-btn color="orange" @click="deactivateAccount" v-if="selectedUser">
             Deactivate Account
           </v-btn>
@@ -111,12 +112,12 @@ export default {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              email: this.selectedUser.email, // Send the selected user's email
+              email: this.selectedUser.email, 
             }),
           });
           if (response.ok) {
             alert('Account deactivated successfully!');
-            this.dialog = false; // Close the dialog after deactivation
+            this.dialog = false; 
           } else {
             alert('Failed to deactivate account.');
           }
@@ -130,7 +131,6 @@ export default {
       const emails = this.users.map(user => user.email);
       const currentUserEmail = localStorage.getItem('email');
       const filteredEmails = emails.filter(email => email !== currentUserEmail);
-      console.log(emails);
       try {
         const response = await fetch('http://localhost:3001/mail/all', {
           method: 'POST',
@@ -164,5 +164,46 @@ export default {
 <style scoped>
 .user-list {
   margin: 20px;
+}
+
+h2 {
+  font-size: 24px;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 20px;
+}
+
+.send-email-section {
+  margin-top: 30px;
+}
+
+.v-data-table {
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.v-data-table th {
+  background-color: #42b983;
+  color: white;
+  font-weight: bold;
+}
+
+.v-data-table td {
+  padding: 10px;
+}
+
+.v-dialog {
+  padding: 20px;
+}
+
+.v-card-title {
+  font-size: 20px;
+  font-weight: bold;
+  color: #333;
+}
+
+.v-card-text p {
+  margin: 5px 0;
 }
 </style>

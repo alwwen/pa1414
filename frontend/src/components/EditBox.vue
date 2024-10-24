@@ -90,34 +90,36 @@
   
   <script setup>
 import { ref, onMounted } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
+import { ro } from 'vuetify/locale';
 
-// State variables
-const box = ref({}); // Stores box data
-const boxTitle = ref(''); // Stores edited box title
-const listItems = ref([]); // Stores list items for list-type boxes
-const fileLink = ref(''); // Stores file link for image/audio
-const audioFile = ref(null); // For audio file upload
-const imageFile = ref(null); // For image file upload
-const originalType = ref(''); // Stores the original box type
 
-const route = useRoute(); // Get route information to fetch box data
-const id = route.params.id; // Get the box ID from the URL
+const box = ref({}); 
+const boxTitle = ref(''); 
+const listItems = ref([]); 
+const fileLink = ref(''); 
+const audioFile = ref(null); 
+const imageFile = ref(null); 
+const originalType = ref(''); 
 
-// Fetch box data based on box ID
+const route = useRoute(); 
+const router = useRouter();
+const id = route.params.id; 
+
+
 async function fetchBox(id) {
   try {
     const response = await fetch(`http://localhost:3001/api/boxes/${id}`);
     box.value = await response.json();
 
-    // Populate the box title and content based on type
+    
     boxTitle.value = box.value.title;
     originalType.value = box.value.type;
     if (box.value.type === 'list') {
-      // Fetch list content from the API
+      
       await fetchFileContent(box.value.filePath);
     } else {
-      // Set file link for image/audio
+      
       fileLink.value = `/src/form_data/${box.value.filePath}`;
     }
   } catch (error) {
@@ -125,28 +127,28 @@ async function fetchBox(id) {
   }
 }
 
-// Function to change the box type
+
 function changeType(newType) {
   box.value.type = newType;
 }
 
-// Fetch the list content if the box type is 'list'
+
 async function fetchFileContent(filePath) {
   try {
     const response = await fetch(`http://localhost:3001/api/list?path=/home/alexanderw/pa1414/frontend/src/form_data/${filePath}`);
     const text = await response.text();
-    listItems.value = text.split('\n'); // Split the file content into individual list items
-    console.log('Fetched file content:', listItems.value);
+    listItems.value = text.split('\n'); 
+    
   } catch (error) {
     console.error('Error fetching file content:', error);
   }
 }
 
-// Function to handle form submission (edit action)
+
 async function handleSubmit() {
   const formData = new FormData();
 
-  // Append title and type
+  
   formData.append('title', boxTitle.value);
   formData.append('type', box.value.type);
   let pathEnding = ""
@@ -160,17 +162,17 @@ async function handleSubmit() {
   if (box.value.type !== originalType.value) {
     formData.append('filename', box.value.filePath.split(".")[0] + pathEnding);
   } else {
-    formData.append('filename', box.value.filePath); // Reuse the original file name
+    formData.append('filename', box.value.filePath); 
   }
   
 
-  console.log('Box type:', box.value.type);
-  console.log('Box title:', boxTitle.value);
-  console.log('filePath:', box.value.filePath);
   
-  // Handle based on box type
+  
+  
+  
+  
   if (box.value.type === 'list') {
-    const fileContent = listItems.value.join('\n'); // Join list items into a single string
+    const fileContent = listItems.value.join('\n'); 
     formData.append('fileContent', new Blob([fileContent], { type: 'text/plain' }));
   } else if (box.value.type === 'image' && imageFile.value) {
     formData.append('fileContent', imageFile.value);
@@ -178,20 +180,20 @@ async function handleSubmit() {
     formData.append('fileContent', audioFile.value);
   }
   
-  console.log("FILE DATA:", formData.get('filename'));
   
-  // Send the form data to the server
+  
+  
   try {
     const response = await fetch(`http://localhost:3001/api/boxes-update/${id}`, {
-      method: 'POST', // Use POST method for updating the box
+      method: 'POST', 
       body: formData,
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`, // Include auth token
+        'Authorization': `Bearer ${localStorage.getItem('token')}`, 
       },
     });
 
     if (response.ok) {
-      console.log('Box updated successfully');
+      router.push(`/my-boxes/${id}`);
     } else {
       console.error('Error updating box:', response.statusText);
     }
@@ -200,12 +202,12 @@ async function handleSubmit() {
   }
 }
 
-// Add a new item to the list when editing a list-type box
+
 function addNewItem() {
-  listItems.value.push(''); // Add a blank input for a new list item
+  listItems.value.push(''); 
 }
 
-// Fetch the box data when the component is mounted
+
 onMounted(() => {
   fetchBox(id);
 });

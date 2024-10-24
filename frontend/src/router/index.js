@@ -13,10 +13,10 @@ import IndexView from '@/pages/testing.vue'
 import HomePage from '@/pages/home.vue'
 import RegisterPage from '@/pages/register.vue'
 import LoginPage from '@/pages/login.vue'
-import CreateBox from '@/components/CreateBox.vue'; // Your Create Box page
-import MyBoxes from '@/components/MyBoxes.vue';    // Your My Boxes page
-import MyBox from '@/components/MyBox.vue';        // Your My Box page
-import User from '@/pages/user.vue';          // Your User page
+import CreateBox from '@/components/CreateBox.vue';
+import MyBoxes from '@/components/MyBoxes.vue';
+import MyBox from '@/components/MyBox.vue';
+import User from '@/pages/user.vue';
 import VerifyAccount from '@/components/Verification.vue';
 import Userprofile from '@/components/userprofile.vue';
 import UserList from '@/components/UserList.vue';
@@ -79,27 +79,22 @@ const router = createRouter({
 })
 
 router.beforeEach((to, from, next) => {
-  const token = localStorage.getItem('token'); // Get JWT token from localStorage
-  const { isAuthenticated, isLoading } = useAuth0(); // Get Auth0 authentication status
-  console.log('isAuthenticated', !isAuthenticated.value)
-  console.log('token', !token)
+  const token = localStorage.getItem('token');
+  const { isAuthenticated, isLoading } = useAuth0();
+  
+  
 
-  // Define public routes (those that don't require authentication)
   const publicRoutes = ['/', '/user/login', '/user/register', '/verify'];
 
-  // Check if the current route is a public route or matches the "/my-boxes/:id" pattern
   const isPublicRoute = publicRoutes.includes(to.path) || /^\/my-boxes\/\d+$/.test(to.path);
 
-  console.log('isPublicRoute', isPublicRoute);
   
-  // If the user is trying to access a protected route and is not authenticated
+  
   if ((!token && !isAuthenticated.value) && !isPublicRoute) {
-    // Redirect to the login page
-    console.log("Redirecting to login");
+    
     next('/');
   } else {
-    // Allow access to the requested route
-    console.log("Access granted to route");
+    
     next();
   }
 });
@@ -110,7 +105,7 @@ router.beforeEach((to, from, next) => {
 // router.onError((err, to) => {
 //   if (err?.message?.includes?.('Failed to fetch dynamically imported module')) {
 //     if (!localStorage.getItem('vuetify:dynamic-reload')) {
-//       console.log('Reloading page to fix dynamic import error')
+//       
 //       localStorage.setItem('vuetify:dynamic-reload', 'true')
 //       location.assign(to.fullPath)
 //     } else {

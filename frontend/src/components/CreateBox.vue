@@ -4,7 +4,6 @@
       <v-card>
         <v-card-title>Create New Box</v-card-title>
 
-        <!-- Title Input Field -->
         <v-card-text>
           <v-text-field
             v-model="boxTitle"
@@ -24,7 +23,7 @@
           ></v-switch>
         </v-card-text>
 
-        <!-- Selection for Input Type -->
+
         <v-card-text>
           <v-select
             v-model="selectedOption"
@@ -35,7 +34,6 @@
           ></v-select>
         </v-card-text>
 
-        <!-- Conditional Rendering Based on Selected Option -->
         <v-card-text v-if="selectedOption === 'list'">
           <h3>Input List</h3>
           <v-text-field
@@ -108,7 +106,7 @@
 </template>
 
 <script>
-// Helper function to generate random string
+
 function generateRandomString(length) {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
   let result = '';
@@ -121,8 +119,8 @@ function generateRandomString(length) {
 export default {
   data() {
     return {
-      boxTitle: '', // For box title input
-      selectedOption: '', // For input type selection
+      boxTitle: '',
+      selectedOption: '',
       options: [
         { title: 'List', value: 'list' },
         { title: 'Audio File', value: 'audio' },
@@ -130,11 +128,11 @@ export default {
       ],
       selectedLabel: '',
       selectedContent: '',
-      listItems: [], // For list input
-      audioFile: null, // For audio file upload
-      imageFile: null, // For image file upload
-      isPublic: false, // To track whether the box is public or not
-      email: localStorage.getItem('email') || '', // Email of logged in user
+      listItems: [],
+      audioFile: null,
+      imageFile: null,
+      isPublic: false,
+      email: localStorage.getItem('email') || '', 
       labelOptions: [
         { text: 'Label 1', value: 'label1.png' },
         { text: 'Label 2', value: 'label2.png' },
@@ -149,26 +147,26 @@ export default {
   },
   methods: {
     addNewItem() {
-      this.listItems.push(''); // Add a new blank input field for the list
+      this.listItems.push(''); 
     },
     getLabelImagePath(label) {
-      return `/src/assets/${label}`; // Path to your label images folder
+      return `/src/assets/${label}`; 
     },
     selectLabel(label) {
-      this.selectedLabel = label; // Set the clicked label as the selected one
+      this.selectedLabel = label; 
     },
     getContentImagePath(content) {
-      return `/src/assets/${content}`; // Path to your label images folder
+      return `/src/assets/${content}`; 
     },
     selectContent(content) {
-      this.selectedContent = content; // Set the clicked label as the selected one
+      this.selectedContent = content; 
     },
     async handleSubmit() {
       const formData = new FormData();
-      console.log(this.selectedOption);
+      
       if (this.selectedOption === 'list') {
-        console.log("HERE????!?!?!?!??!?")
-        const fileContent = this.listItems.join('\n'); // Join list items with a new line
+        
+        const fileContent = this.listItems.join('\n'); 
 
         formData.append('title', this.boxTitle);
         formData.append('email', this.email);
@@ -178,35 +176,35 @@ export default {
         formData.append('public', this.isPublic);
 
       } else if (this.selectedOption === 'image') {
-        console.log("YES 1");
+        
         if (this.imageFile) {
-          console.log("YES 2");
+          
           formData.append('title', this.boxTitle);
           formData.append('email', this.email);
           formData.append('type', this.selectedOption);
-          formData.append('filename', generateRandomString(20) + '.png'); // Random filename for the image
-          formData.append('fileContent', this.imageFile); // Append the image file to the form data
+          formData.append('filename', generateRandomString(20) + '.png'); 
+          formData.append('fileContent', this.imageFile); 
           formData.append('public', this.isPublic);
         } else {
           console.error('No image file selected');
-          return; // Exit if no image is selected
+          return; 
         }
       } else if (this.selectedOption === 'audio') {
         if (this.audioFile) {
           formData.append('title', this.boxTitle);
           formData.append('email', this.email);
           formData.append('type', this.selectedOption);
-          formData.append('filename', generateRandomString(20) + '.mp3'); // Random filename for audio
-          formData.append('fileContent', this.audioFile); // Append the audio file to the form data
+          formData.append('filename', generateRandomString(20) + '.mp3'); 
+          formData.append('fileContent', this.audioFile); 
           formData.append('public', this.isPublic);
         } else {
           console.error('No audio file selected');
-          return; // Exit if no audio is selected
+          return; 
         }
       }
       formData.append('label', this.selectedLabel);
       formData.append('content', this.selectedContent);
-      console.log("FILE DATA:", formData.get('filename'));
+      
       try {
         const response = await fetch('http://localhost:3001/api/boxes', {
           method: 'POST',
@@ -218,7 +216,7 @@ export default {
 
         if (response.ok) {
           const result = await response.json();
-          console.log('Box created successfully:', result);
+          this.$router.push(`/my-boxes`);
         } else {
           console.error('Error submitting form:', response.statusText);
         }

@@ -32,9 +32,9 @@
   export default {
     data() {
       return {
-        email: localStorage.getItem('email'), // Get email from local storage
-        lastLogin: '2024-10-10 12:00:00', // Placeholder for last login, should be retrieved from the server
-        role: 'User', // Placeholder for user role, should be retrieved from the server
+        email: localStorage.getItem('email'), 
+        lastLogin: '2024-10-10 12:00:00',
+        role: 'User', 
       };
     },
     methods: {
@@ -46,13 +46,11 @@
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ email }) // Pass email directly
+                    body: JSON.stringify({ email }) 
                 });
                 if (response.ok) {
-                    // Handle successful account deletion
-                    console.log('Account deleted successfully');
+                    
                 } else {
-                    // Handle error
                     const errorData = await response.json();
                     console.error('Error:', errorData.message);
                 }
@@ -68,13 +66,11 @@
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ email }) // Pass email directly
+                    body: JSON.stringify({ email }) 
                 });
                 if (response.ok) {
-                    // Handle successful account status change
-                    console.log('Account set to inactive');
+                    
                 } else {
-                    // Handle error
                     const errorData = await response.json();
                     console.error('Error:', errorData.message);
                 }

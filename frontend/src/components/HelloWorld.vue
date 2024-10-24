@@ -169,8 +169,8 @@
     try {
       const response = await fetch('http://localhost:3001/api/boxes');
       boxes.value = await response.json();
-      console.log("HEJ");
-      console.log(boxes.value);
+      
+      
     } catch (error) {
       console.error(error);
     }

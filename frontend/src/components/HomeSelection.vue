@@ -11,20 +11,20 @@
       <v-card-title>View My Boxes</v-card-title>
       <v-card-text>View and manage all your existing boxes.</v-card-text>
     </v-card>
-
   </div>
 </template>
 
 <script>
 import { onMounted } from 'vue';
-import { useAuth0 } from '@auth0/auth0-vue'; // Import Auth0
+import { useAuth0 } from '@auth0/auth0-vue'; 
+import { useRouter } from 'vue-router'; 
 
 export default {
   setup() {
-    const { user, isAuthenticated } = useAuth0(); // Get user info from Auth0
-    const router = useRouter(); // Import router to navigate pages
+    const { user, isAuthenticated } = useAuth0(); 
+    const router = useRouter(); 
 
-    // Check if the user exists, if not, create one
+    
     const checkUser = async (email) => {
       const response = await fetch('http://localhost:3001/check-user', {
         method: 'POST',
@@ -34,25 +34,22 @@ export default {
         body: JSON.stringify({ email }),
       });
       const data = await response.json();
-      console.log("data", data);
-          // Store the JWT token in localStorage
+      
+      
       localStorage.setItem('email', data.email);
       localStorage.setItem('role', data.role);
       localStorage.setItem('token', data.token);
     };
 
-    // onMounted lifecycle hook to check if user is authenticated
     onMounted(async () => {
       const storedUser = localStorage.getItem('email');
       if (!storedUser && isAuthenticated.value) {
-        console.log("HÄR SKA DU VARA!");
-        // If user is authenticated and no email is in localStorage, get email from Auth0
         const email = user.value.email;
         await checkUser(email);
       }
     });
 
-    // Methods inside setup()
+    
     const goToCreateBox = () => {
       router.push('/create-box');
     };
@@ -61,15 +58,9 @@ export default {
       router.push('/my-boxes');
     };
 
-    const mail = async () => {
-      const response = await fetch('http://localhost:3001/mail/test');
-      console.log(response);
-    };
-
     return {
       goToCreateBox,
       goToMyBoxes,
-      mail,
     };
   },
 };
@@ -87,17 +78,41 @@ export default {
 .card-box {
   width: 300px;
   height: 200px;
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   cursor: pointer;
-  transition: 0.3s;
-  border-radius: 15px;
+  transition: background-color 0.3s ease, box-shadow 0.3s ease;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
   text-align: center;
+  padding: 20px;
 }
 
 .card-box:hover {
   background-color: #f0f0f0;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+v-card-title {
+  font-size: 18px;
+  font-weight: bold;
+  color: #333;
+}
+
+v-card-text {
+  font-size: 14px;
+  color: #666;
+  margin-top: 10px;
+}
+
+.cards-container .v-card {
+  border: 1px solid #ddd;
+}
+
+.cards-container .v-card:hover {
+  background-color: #e8f4f8;
 }
 </style>

@@ -14,14 +14,12 @@ const { createCanvas, loadImage } = require('canvas');
 const transporter = nodemailer.createTransport({
     host: 'smtp.gmail.com',
     port: 587,
-    secure: false, // use false for STARTTLS; true for SSL on port 465
+    secure: false,
     auth: {
       user: 'pa1414moveout@gmail.com',
       pass: 'anfdhibaozqhieot',
     }
   });
-
-//   #btbvqtqttazvlyfb
 
 dotenv.config();
 const sequelize = new Sequelize ({
@@ -35,36 +33,36 @@ if (!fs.existsSync(uploadDirectory)) {
   fs.mkdirSync(uploadDirectory);
 }
 
-const qrCodeDir = "/home/alexanderw/pa1414/frontend/src/qr_codes"; // Adjust the path as necessary
+const qrCodeDir = "/home/alexanderw/pa1414/frontend/src/qr_codes"; 
 if (!fs.existsSync(qrCodeDir)){
     fs.mkdirSync(qrCodeDir);
 }
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, uploadDirectory); // Directory where files will be saved
+    cb(null, uploadDirectory); 
   },
   filename: (req, file, cb) => {
     const originalFilename = file.originalname;
-    const customFilename = req.body.filename || originalFilename; // Use the filename from the body or fallback to the original
-    console.log('Custom filename:', customFilename);
-    console.log('Original filename:', originalFilename);
-    console.log('Req filename:', req.body.filename);
-    cb(null, customFilename); // Use the original name of the file
+    const customFilename = req.body.filename || originalFilename; 
+    
+    
+    
+    cb(null, customFilename); 
   },
 });
 
 async function calculateStorage(boxes) {
     let totalSize = 0;
 
-    // Iterate over each box
+    
     for (const box of boxes) {
         if (box.filePath) {
-            const filePath = "/home/alexanderw/pa1414/frontend/src/form_data/" + box.filePath; // Adjust this path as necessary
+            const filePath = "/home/alexanderw/pa1414/frontend/src/form_data/" + box.filePath; 
             try {
-                // Use fs.statSync to get the file stats
+                
                 const stats = fs.statSync(filePath);
-                totalSize += stats.size; // Add file size to total
+                totalSize += stats.size; 
             } catch (error) {
                 console.error(`Could not get size for file ${filePath}:`, error);
             }
@@ -72,7 +70,7 @@ async function calculateStorage(boxes) {
         }
     }
 
-    return totalSize; // Return the total size in bytes
+    return totalSize; 
 }
 
 function formatBytes(bytes, decimals = 2) {
@@ -153,10 +151,10 @@ async function setupDB() {
             }
         });
         await sequelize.sync();
-        // await db.Boxes.create({ text: "Box-1"});
-        // await db.Boxes.create({ text: "Box-2"});
-        // await db.Boxes.create({ text: "Box-3"});
-        console.log("Database setup complete.");
+        
+        
+        
+        
     } catch (error) {
         console.error(error);
     }
@@ -182,7 +180,7 @@ async function startServer() {
     try {
         await setupDB()
         const port = 3001
-        console.log(process.env.GOOGLE_MAIL_APP_PASS);
+        
         const express = require('express')
         const app = express()
         app.use(cors());
@@ -196,7 +194,7 @@ async function startServer() {
             const { email, password } = req.body;
 
             try {
-                // Check if the user already exists
+                
                 const existingUser = await db.User.findOne({ where: { email } });
                 if (existingUser) {
                     return res.status(400).json({ message: 'User already exists' });
@@ -207,10 +205,10 @@ async function startServer() {
                     token += chars.charAt(Math.floor(Math.random() * chars.length));
                 }
 
-                // Hash the password before saving the user
+                
                 const hashedPassword = await bcrypt.hash(password, 10);
 
-                // Create and save the user
+                
                 const user = await db.User.create({
                     email,
                     password: hashedPassword,
@@ -219,9 +217,9 @@ async function startServer() {
                 });
 
                 const mailOptions = {
-                    from: '"Alexander Winblad" <pa1414moveout@gmail.com>', // sender address
-                    to: email, // list of receivers
-                    subject: "Verify your email", // Subject line
+                    from: '"Alexander Winblad" <pa1414moveout@gmail.com>', 
+                    to: email, 
+                    subject: "Verify your email", 
                     html: `
                     <h1>Welcome to Our Platform!</h1>
                     <p>Hi there,</p>
@@ -237,15 +235,15 @@ async function startServer() {
                 };
                 transporter.sendMail(mailOptions, function(error, info){
                     if (error) {
-                        console.log('Error:', error);
+                        
                     } else {
-                        console.log('Email sent: ', info.response);
+                        
                     }
                 });
 
                 res.status(201).json({ id: user.id, email: user.email });
             } catch (error) {
-                console.log("WTF!?");
+                
                 res.status(500).json({ message: 'Error registering user', error });
             }
         });
@@ -254,17 +252,17 @@ async function startServer() {
             const { email, token } = req.body;
         
             try {
-                // Find the user by email and verification token
+                
                 const test_user = await db.User.findOne({ where: { email } });
-                console.log("User:", test_user);
+                
                 const user = await db.User.findOne({ where: { email, verify_token: token } });
                 if (!user) {
                     return res.status(400).json({ message: 'Invalid token or email' });
                 }
         
-                // Mark the user as verified (remove the token and set verified flag)
+                
                 await db.User.update(
-                    { verify_token: null, verified: true },  // Clear token and set user as verified
+                    { verify_token: null, verified: true },  
                     { where: { id: user.id } }
                 );
         
@@ -275,43 +273,43 @@ async function startServer() {
         });
         
 
-        // User login
+        
         app.post('/login', async (req, res) => {
             const { email, password } = req.body;
 
             try {
-                // Find the user by username
-                console.log("HEJ1");
+                
+                
                 const user = await db.User.findOne({ where: { email } });
                 if (!user) {
                     return res.status(400).json({ message: 'Invalid username or password' });
                 }
-                console.log("HEJ2");
-                // Compare passwords
+                
+                
                 const validPassword = await bcrypt.compare(password, user.password);
                 if (!validPassword) {
                     return res.status(400).json({ message: 'Invalid username or password' });
                 }
-                console.log("HEJ3");
+                
                 const validated = user.verified;
 
                 if (!validated) {
                     return res.status(400).json({ message: 'Account not verified' });
                 }
-                console.log("HEJ4");
-                // Update the last_login_date field to the current date
-                const currentDate = new Date().toISOString(); // YYYY-MM-DD format
+                
+                
+                const currentDate = new Date().toISOString(); 
 
                 await db.User.update(
                     { lastLogin: currentDate, inactive: false },
                     { where: { id: user.id } }
                 );
-                console.log("HEJ5");
-                // Generate JWT token
+                
+                
                 const token = jwt.sign({ id: user.id, username: user.email }, process.env.JWT_SECRET, {
                     expiresIn: '1h',
                 });
-                console.log("HEJ6");
+                
                 res.json({ token: token, email: user.email, role: user.role });
             } catch (error) {
                 res.status(500).json({ message: 'Error logging in', error });
@@ -320,20 +318,20 @@ async function startServer() {
 
         app.get('/users', auth, async (req, res) => {
             try {
-                // Fetch all users
+                
                 const users = await db.User.findAll({
-                    attributes: ['id', 'email', 'role', 'lastLogin', 'inactive'] // Select specific attributes
+                    attributes: ['id', 'email', 'role', 'lastLogin', 'inactive'] 
                 });
         
-                // Prepare a response object
+                
                 const userData = await Promise.all(users.map(async (user) => {
-                    // Fetch boxes for the current user based on the user's email
+                    
                     const boxes = await db.Boxes.findAll({
                         attributes: ['filePath'],
-                        where: { email: user.email } // Get boxes belonging to the user
+                        where: { email: user.email } 
                     });
         
-                    // Calculate total storage used for the user's boxes
+                    
                     const storageUsed = await calculateStorage(boxes);
         
                     return {
@@ -342,7 +340,7 @@ async function startServer() {
                         role: user.role,
                         lastLogin: user.lastLogin,
                         inactive: user.inactive,
-                        storageUsed: formatBytes(storageUsed), // Use formatted size
+                        storageUsed: formatBytes(storageUsed), 
                     };
                 }));
         
@@ -355,41 +353,41 @@ async function startServer() {
 
         
         app.delete('/delete-account', async (req, res) => {
-            const { email } = req.body; // Get email from the request body
+            const { email } = req.body; 
         
             try {
-                // Check if the user exists before deleting
+                
                 const existingUser = await db.User.findOne({ where: { email } });
                 if (!existingUser) {
                     return res.status(404).json({ message: 'User not found' });
                 }
         
-                // Delete the user by email
+                
                 await db.User.destroy({
                     where: { email },
                 });
         
-                return res.status(204).send(); // No content
+                return res.status(204).send(); 
             } catch (error) {
                 console.error(error);
                 return res.status(500).json({ message: 'Error deleting account' });
             }
         });
         
-        // Set Inactive Route
+        
         app.patch('/set-inactive', async (req, res) => {
-            const { email } = req.body; // Get email from the request body
+            const { email } = req.body; 
         
             try {
-                // Check if the user exists before updating
+                
                 const existingUser = await db.User.findOne({ where: { email } });
                 if (!existingUser) {
                     return res.status(404).json({ message: 'User not found' });
                 }
         
-                // Set the user's status to inactive
+                
                 await db.User.update(
-                    { active: false }, // Assuming there is an 'active' field
+                    { active: false }, 
                     { where: { email } }
                 );
         
@@ -405,12 +403,12 @@ async function startServer() {
         
             try {
                 const existingUser = await db.User.findOne({ where: { email } });
-                console.log('Existing user:', existingUser);
+                
                 let role = existingUser?.role;
                 let token = "";
                 const currentDate = new Date().toISOString();
                 if (!existingUser) {
-                    console.log("HEEERE");
+                    
                     role = 'user';
                     const user = await db.User.create({
                         email,
@@ -432,7 +430,7 @@ async function startServer() {
                     });
                 }
 
-                console.log("Sista steget");
+                
                 return res.status(200).json({ message: 'User exists', role: role, email: email, token: token });
             } catch (error) {
                 console.error(error);
@@ -441,16 +439,16 @@ async function startServer() {
         });
 
 
-        // GET METHOD API URL | RETRIEVE ITEMS
+        
         app.get('/api/boxes', auth, (req, res) => {
-            const userEmail = req.headers['user-email']; // Email from headers
-            const userRole = req.headers['user-role'];   // Role from headers
+            const userEmail = req.headers['user-email']; 
+            const userRole = req.headers['user-role'];   
         
             if (!userEmail || !userRole) {
                 return res.status(400).json({ error: 'Missing email or role in headers' });
             }
         
-            // If the user is admin, return all boxes
+            
             if (userRole === 'admin') {
                 db.Boxes.findAll({
                     where: {
@@ -463,21 +461,21 @@ async function startServer() {
                     .then(boxes => res.json(boxes))
                     .catch(err => res.status(500).json({ error: 'Error fetching boxes' }));
             } else {
-                // If the user is not admin, return boxes that belong to the user
+                
                 db.Boxes.findAll({
-                    where: { email: userEmail }  // Assuming `userEmail` is the field in your database that links boxes to users
+                    where: { email: userEmail }  
                 })
                 .then(boxes => res.json(boxes))
                 .catch(err => res.status(500).json({ error: 'Error fetching boxes' }));
             }
         });
-        // POST METHOD API URL | CREATE ITEM
-        // app.post('/api/boxes', (req, res) => {
-        //     // create a task
-        //     db.Task.create(req.body).then( t => {
-        //         res.json(t)
-        //     }) 
-        // })
+        
+        
+        
+        
+        
+        
+        
 
         app.post('/api/boxes-update/:id', upload.single('fileContent'), async (req, res) => {
             try {
@@ -485,25 +483,20 @@ async function startServer() {
               if (!req.file) {
                 return res.status(400).json({ message: 'No file uploaded' });
               }
-              console.log(req.body);
-              console.log('title:', title);
-                console.log('type:', type);
-                console.log('filename:', req.body.filename);
-                console.log('file:', filename);
-              // Find the box by ID
+
               const box = await db.Boxes.findByPk(req.params.id);
               
               if (!box) {
                 return res.status(404).json({ message: 'Box not found' });
               }
           
-              // Update the box title
+              console.log(title);
               box.title = title;
               box.type = type;
                 box.filePath = filename;
           
-              await box.save(); // Save changes
-              res.status(200).json(box); // Send back the updated box
+              await box.save(); 
+              res.status(200).json(box); 
             } catch (error) {
               console.error('Error updating box:', error);
               res.status(500).json({ message: 'Error updating box' });
@@ -513,9 +506,9 @@ async function startServer() {
 
 
 
-        // DELETE METHOD API URL | DELETE ITEM
+        
         app.delete('/api/boxes/:id', auth, (req, res) => {
-            // delete a task
+            
             db.Boxes.destroy({
                 where: {
                     id: req.params.id
@@ -524,17 +517,17 @@ async function startServer() {
                 res.sendStatus(204);
             }).catch((error) => {
                 console.error(error);
-                res.sendStatus(500); // Internal Server Error
+                res.sendStatus(500); 
             });
         });
 
         app.post('/api/boxes', auth, upload.single('fileContent'), async (req, res) => {
           try {
             const { email, title, type, public, label, content } = req.body;
-            console.log('Test 1:', req.file);
-            console.log('Test 2:', req.body);
+            
+            
             let access_token = '';
-            // The file should now be saved by multer in the 'form_data' folder
+            
             if (!req.file) {
               return res.status(400).json({ message: 'No file uploaded' });
             }
@@ -544,7 +537,7 @@ async function startServer() {
             }
             if (!publiic) {
                 const chars = '0123456789';
-                console.log("HEJ");
+                
                 access_token = '';
                 for (let i = 0; i < 6; i++) {
                     access_token += chars.charAt(Math.floor(Math.random() * chars.length));
@@ -552,80 +545,80 @@ async function startServer() {
             }
             
             const filePath = req.file.filename;
-            console.log('File uploaded:', filePath);
             
-            // Create the box in the database
+            
+            
             const box = await db.Boxes.create({
               email,
               title,
               type,
               filePath,
-              qrCode: '', // Initially empty, will update it later
+              qrCode: '', 
               publiic,
               access_code: access_token
             });
-            console.log(access_token);
             
-            // Generate the QR code with the link
+            
+            
             const qrCodeURL = `http://localhost:3000/my-boxes/${box.id}`;
             const qrCodePath = path.join(qrCodeDir, `${box.id}_qr.png`);
 
             const backgroundImage = await loadImage(`./../frontend/src/assets/${label}`);
 
-            // Create a canvas with the same size as the background image
+            
             const canvas = createCanvas(1301, 574);
             const ctx = canvas.getContext('2d');
 
-            // Draw the background image onto the canvas
+            
             ctx.drawImage(backgroundImage, 0, 0, canvas.width, canvas.height);
 
-            // Add the title text (centered)
+            
             ctx.font = '48px Arial';
             ctx.fillStyle = '#000000';
             ctx.textAlign = 'center';
-            ctx.fillText(box.title, canvas.width / 2, 50); // Adjust the y-position if needed
+            ctx.fillText(box.title, canvas.width / 2, 50); 
 
-            // Generate the QR code image data URL
+            
             const qrCodeDataUrl = await QRCode.toDataURL(qrCodeURL, {
                 width: 150,
                 margin: 1,
             });
 
-            // Load the QR code image from the data URL
+            
             const qrCodeImage = await loadImage(qrCodeDataUrl);
 
-            // Draw the QR code image onto the canvas (centered horizontally, placed below the text)
-            const qrCodeSize = 300; // Size of the QR code
-            ctx.drawImage(qrCodeImage, (canvas.width - qrCodeSize) / 2, 250, qrCodeSize, qrCodeSize); // Adjust y-position
-            console.log("CONTENT:", content);
+            
+            const qrCodeSize = 300; 
+            ctx.drawImage(qrCodeImage, (canvas.width - qrCodeSize) / 2, 250, qrCodeSize, qrCodeSize); 
+            
             const warningSize = 90;
             const warningImage = await loadImage(`./../frontend/src/assets/${content}`);
             ctx.drawImage(warningImage, 30, 400, warningSize, warningSize);
-            // Save the final image as `${box.id}_label.png` in the qrCodeDir
+            
             const finalImagePath = path.join(qrCodeDir, `${box.id}_label.png`);
             const out = fs.createWriteStream(finalImagePath);
             const stream = canvas.createPNGStream();
             stream.pipe(out);
 
             out.on('finish', () => {
-                console.log(`Label image saved at ${finalImagePath}`);
+                
             });
         
-            // Generate QR code and save it
+            
             await QRCode.toFile(qrCodePath, qrCodeURL);
             
-            // Update the box with the QR code path
-            box.qrCode = qrCodePath; // or you can save just the filename if you prefer
+            
+            box.qrCode = qrCodePath; 
             await box.save();
         
-            // Send back a success response with file path and user data
+            
             res.status(200).json({
               message: 'Box created successfully',
               email,
-              link: filePath, // File path saved on the server
+              link: filePath, 
               type,
               title,
-              qrCode: qrCodePath, // Include the QR code path in the response
+              qrCode: qrCodePath, 
               public,
             });
           } catch (error) {
@@ -636,7 +629,7 @@ async function startServer() {
 
         app.get('/api/boxes/:id', async (req, res) => {
           try {
-            const box = await db.Boxes.findByPk(req.params.id); // Fetch by primary key
+            const box = await db.Boxes.findByPk(req.params.id); 
             if (box) {
               res.json(box);
             } else {
@@ -649,7 +642,7 @@ async function startServer() {
         });
 
         app.get('/api/list', (req, res) => {
-          const filePath = req.query.path; // Get file path from query parameter
+          const filePath = req.query.path; 
           fs.readFile(filePath, 'utf8', (err, data) => {
             if (err) {
               return res.status(500).json({ error: 'Error reading file' });
@@ -661,17 +654,17 @@ async function startServer() {
         app.get('/mail/test', async (req, res) => {
             try {
                 const mailOptions = {
-                    from: '"Alexander Winblad" <pa1414moveout@gmail.com>', // sender address
-                    to: "alwi12399@gmail.com", // list of receivers
-                    subject: "Tjena Tjena", // Subject line
-                    text: "WTF", // plain text body
-                    html: "<b>Hello world?</b>", // html body
+                    from: '"Alexander Winblad" <pa1414moveout@gmail.com>', 
+                    to: "alwi12399@gmail.com", 
+                    subject: "Tjena Tjena", 
+                    text: "WTF", 
+                    html: "<b>Hello world?</b>", 
                 };
                 transporter.sendMail(mailOptions, function(error, info){
                     if (error) {
-                      console.log('Error:', error);
+                      
                     } else {
-                      console.log('Email sent: ', info.response);
+                      
                     }
                   });
                 res.send('Mail sent');
@@ -685,9 +678,9 @@ async function startServer() {
         app.post('/share', async (req, res) => {
             const { email, url, access_code } = req.body;
             const mailOptions = {
-                from: '"Alexander Winblad" <pa1414moveout@gmail.com>', // sender address
-                to: email, // list of receivers
-                subject: "Box sharing", // Subject line
+                from: '"Alexander Winblad" <pa1414moveout@gmail.com>', 
+                to: email, 
+                subject: "Box sharing", 
                 html: `
                 <h1>Someone wants to share their box with you!</h1>
                 <p>Hi there,</p>
@@ -700,24 +693,24 @@ async function startServer() {
             };
             transporter.sendMail(mailOptions, function(error, info){
                 if (error) {
-                    console.log('Error:', error);
+                    
                 } else {
-                    console.log('Email sent: ', info.response);
+                    
                 }
             });
         });
 
-        // Route to send email to all users except the logged-in user
+        
         app.post('/mail/all', auth, async (req, res) => {
-            const { emailContent, emails } = req.body;         // Email content from the request body
+            const { emailContent, emails } = req.body;         
             try {
-                // Send an email to each user
+                
                 for (const email of emails) {
                     await transporter.sendMail({
                         from: '"Alexander Winblad" <pa1414moveout@gmail.com>',
                         to: email,
                         subject: 'Message from Admin',
-                        text: emailContent,  // Email content from request body
+                        text: emailContent,  
                     });
                 }
 
@@ -730,7 +723,7 @@ async function startServer() {
 
 
         app.listen(port, () => {
-            console.log(`App listening on port ${port}`) 
+            console.log("Server is running on port " + port)
         })
     } catch (error) {
         console.error(error);
