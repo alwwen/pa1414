@@ -15,11 +15,22 @@ This webapp will help you as a user to organize and keep track of your boxes whe
 
 ### Build
 
-#### 1. Open up the terminal and go to the pa1414 folder:
+#### 1. Clone the repo
+
+```bash
+git clone https://github.com/alwwen/pa1414.git
+cd pa1414
+```
+
+#### 2. Setup dependencies:
 
 NPM:
 ```bash
 cd frontend
+npm install
+```
+```bash
+cd backend
 npm install
 ```
 PNPM:
@@ -27,8 +38,12 @@ PNPM:
 cd backend
 pnpm install
 ```
+```bash
+cd backend
+pnpm install
+```
 
-#### 2. Create and setup the .env file.
+#### 3. Create and setup the .env file.
 
 Go to the backend folder and create the .env file.
 
