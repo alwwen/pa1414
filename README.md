@@ -4,8 +4,7 @@
 
 This webapp will help you as a user to organize and keep track of your boxes when moving. Add your items as a list, image or audio file. Print out the label with a QR-code.
 
-TODO: Add image that helps to understand the project.
-This could be an architectural diagram or a screenshot of the application.
+![pa1414screenshot](https://github.com/user-attachments/assets/1172a277-9fe4-47aa-b0d7-0833e816c051)
 
 ## How to Use
 
