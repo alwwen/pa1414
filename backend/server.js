@@ -10,30 +10,30 @@ const QRCode = require('qrcode');
 const nodemailer = require("nodemailer");
 const { createCanvas, loadImage } = require('canvas');
 
-
+dotenv.config();
 const transporter = nodemailer.createTransport({
     host: 'smtp.gmail.com',
     port: 587,
     secure: false,
     auth: {
-      user: 'pa1414moveout@gmail.com',
-      pass: 'anfdhibaozqhieot',
+      user: process.env.GOOGLE_MAIL,
+      pass: process.env.GOOGLE_MAIL_APP_PASS,
     }
   });
 
-dotenv.config();
+
 const sequelize = new Sequelize ({
     dialect: 'sqlite',
     storage: './database.sqlite'
 })
 var db = {}
 
-const uploadDirectory = "/home/alexanderw/pa1414/frontend/src/form_data";
+const uploadDirectory = path.join(__dirname, '../frontend/src/form_data');
 if (!fs.existsSync(uploadDirectory)) {
   fs.mkdirSync(uploadDirectory);
 }
 
-const qrCodeDir = "/home/alexanderw/pa1414/frontend/src/qr_codes"; 
+const qrCodeDir = path.join(__dirname, '../frontend/src/qr_codes');
 if (!fs.existsSync(qrCodeDir)){
     fs.mkdirSync(qrCodeDir);
 }
@@ -45,9 +45,6 @@ const storage = multer.diskStorage({
   filename: (req, file, cb) => {
     const originalFilename = file.originalname;
     const customFilename = req.body.filename || originalFilename; 
-    
-    
-    
     cb(null, customFilename); 
   },
 });
@@ -55,10 +52,9 @@ const storage = multer.diskStorage({
 async function calculateStorage(boxes) {
     let totalSize = 0;
 
-    
     for (const box of boxes) {
         if (box.filePath) {
-            const filePath = "/home/alexanderw/pa1414/frontend/src/form_data/" + box.filePath; 
+            const filePath = path.join(__dirname, '../frontend/src/form_data/' + box.filePath); 
             try {
                 
                 const stats = fs.statSync(filePath);
@@ -375,7 +371,7 @@ async function startServer() {
         });
         
         
-        app.patch('/set-inactive', async (req, res) => {
+        app.post('/set-inactive', async (req, res) => {
             const { email } = req.body; 
         
             try {
@@ -387,10 +383,10 @@ async function startServer() {
         
                 
                 await db.User.update(
-                    { active: false }, 
+                    { inactive: true }, 
                     { where: { email } }
                 );
-        
+                
                 return res.status(200).json({ message: 'Account set to inactive' });
             } catch (error) {
                 console.error(error);
@@ -409,7 +405,7 @@ async function startServer() {
                 const currentDate = new Date().toISOString();
                 if (!existingUser) {
                     
-                    role = 'user';
+                    role = 'admin';
                     const user = await db.User.create({
                         email,
                         password: null,
@@ -443,7 +439,6 @@ async function startServer() {
         app.get('/api/boxes', auth, (req, res) => {
             const userEmail = req.headers['user-email']; 
             const userRole = req.headers['user-role'];   
-        
             if (!userEmail || !userRole) {
                 return res.status(400).json({ error: 'Missing email or role in headers' });
             }
@@ -479,7 +474,7 @@ async function startServer() {
 
         app.post('/api/boxes-update/:id', upload.single('fileContent'), async (req, res) => {
             try {
-              const { title, type, filename } = req.body;
+              const { title, type, public, filename } = req.body;
               if (!req.file) {
                 return res.status(400).json({ message: 'No file uploaded' });
               }
@@ -494,6 +489,7 @@ async function startServer() {
               box.title = title;
               box.type = type;
                 box.filePath = filename;
+                box.public = public;
           
               await box.save(); 
               res.status(200).json(box); 
@@ -642,7 +638,8 @@ async function startServer() {
         });
 
         app.get('/api/list', (req, res) => {
-          const filePath = req.query.path; 
+        //   const  = req.query.path; 
+          const filePath = path.join(__dirname, '../frontend/src/form_data/' + req.query.path);
           fs.readFile(filePath, 'utf8', (err, data) => {
             if (err) {
               return res.status(500).json({ error: 'Error reading file' });

@@ -108,7 +108,7 @@ function goToEditView() {
 
 async function fetchFileContent(filePath) {
   try {
-    const response = await fetch(`http://localhost:3001/api/list?path=/home/alexanderw/pa1414/frontend/src/form_data/${filePath}`);
+    const response = await fetch(`http://localhost:3001/api/list?path=${filePath}`);
     const text = await response.text();
     fileContent.value = text.split('\n');
   } catch (error) {

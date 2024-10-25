@@ -14,6 +14,14 @@
               required
             ></v-text-field>
           </v-card-text>
+          <v-card-text>
+            <v-switch
+              v-model="isPublic"
+              color="primary"
+              label="Make Box Public?"
+              inset
+            ></v-switch>
+          </v-card-text>
   
           <!-- Type Selection Buttons -->
           <v-card-text>
@@ -101,6 +109,7 @@ const fileLink = ref('');
 const audioFile = ref(null); 
 const imageFile = ref(null); 
 const originalType = ref(''); 
+const isPublic = ref(false);
 
 const route = useRoute(); 
 const router = useRouter();
@@ -115,6 +124,7 @@ async function fetchBox(id) {
     
     boxTitle.value = box.value.title;
     originalType.value = box.value.type;
+    isPublic.value = box.value.public;
     if (box.value.type === 'list') {
       
       await fetchFileContent(box.value.filePath);
@@ -135,7 +145,7 @@ function changeType(newType) {
 
 async function fetchFileContent(filePath) {
   try {
-    const response = await fetch(`http://localhost:3001/api/list?path=/home/alexanderw/pa1414/frontend/src/form_data/${filePath}`);
+    const response = await fetch(`http://localhost:3001/api/list?path=${filePath}`);
     const text = await response.text();
     listItems.value = text.split('\n'); 
     
@@ -151,6 +161,7 @@ async function handleSubmit() {
   
   formData.append('title', boxTitle.value);
   formData.append('type', box.value.type);
+  formData.append('public', isPublic.value);
   let pathEnding = ""
     if (box.value.type === 'list') {
         pathEnding = '.txt';
